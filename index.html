@@ -5,83 +5,74 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>OpsCore — Aviation Parts ERP</title>
+<title>OpsCore</title>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body { width: 100%; overflow-x: hidden; }
-  body { background: #0d1117; color: #e2e8f0; font-family: 'DM Mono', 'Courier New', monospace; font-size: 13px; -webkit-text-size-adjust: 100%; }
-  ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-track { background: #161b22; } ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
-  input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.5); }
-  textarea, select, input { font-family: 'DM Mono', 'Courier New', monospace; font-size: 16px; }
-  select option { background: #0d1117; }
-  button { font-size: 13px; -webkit-appearance: none; appearance: none; }
-  @keyframes fadeIn { from {opacity:0;transform:translateY(6px);} to {opacity:1;transform:translateY(0);} }
-  .fade { animation: fadeIn 0.18s ease; }
-  .hover-row:hover { background: #1c2128 !important; }
-  .mobile-only { display: none; }
-  @media (max-width: 900px) {
-    .sidebar-desktop { display: none !important; }
-    .main-content { margin-left: 0 !important; padding-top: 52px !important; }
-    .mobile-only { display: flex !important; }
-    .body-wrap { padding: 16px !important; }
-    .stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    .detail-grid { grid-template-columns: 1fr !important; }
-    .modal-box { max-width: calc(100vw - 24px) !important; padding: 20px !important; max-height: 85vh !important; }
-    h1 { font-size: 18px !important; }
-    table { min-width: 600px; }
-  }
-  @media (max-width: 600px) {
-    .stat-grid { grid-template-columns: 1fr !important; }
-    .pipeline-grid { grid-template-columns: repeat(2,1fr) !important; }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;overflow-x:hidden}
+  body{background:#0d1117;color:#e2e8f0;font-family:'DM Mono','Courier New',monospace;font-size:13px;-webkit-text-size-adjust:100%}
+  ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#161b22}::-webkit-scrollbar-thumb{background:#30363d;border-radius:4px}
+  input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0.5)}
+  textarea,select,input{font-family:'DM Mono','Courier New',monospace;font-size:16px}
+  select option{background:#0d1117}
+  button{font-size:13px;-webkit-appearance:none;appearance:none}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .fade{animation:fadeIn .18s ease}
+  .hover-row:hover{background:#1c2128 !important}
+  .top-nav{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .top-nav::-webkit-scrollbar{display:none}
+  .drop-zone.dragging{border-color:#58a6ff !important;background:#1f6feb22 !important}
+  @media (max-width:700px){
+    .stat-grid{grid-template-columns:repeat(2,1fr) !important}
+    .detail-grid{grid-template-columns:1fr !important}
+    .modal-box{max-width:calc(100vw - 24px) !important;padding:20px !important;max-height:85vh !important}
+    h1{font-size:18px !important}
+    table{min-width:500px}
+    .pipeline-grid{grid-template-columns:repeat(2,1fr) !important}
   }
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect, useRef, useMemo } = React;
 
 const SEED = {
   customers: [
-    { id:"c1", code:"ATLAS", name:"Atlas Aviation Services", contact:"Robert Chen", email:"rchen@atlasav.com", phone:"(305) 555-0101", billing:"2400 NW 36th St, Miami, FL 33142", terms:"Net 30", status:"Active", notes:"" },
-    { id:"c2", code:"SKYJET", name:"SkyJet International", contact:"Maria Gonzalez", email:"mgonzalez@skyjet.com", phone:"(786) 555-0202", billing:"8000 NW 21st St, Doral, FL 33122", terms:"Prepay", status:"Active", notes:"Requires prepayment." },
-    { id:"c3", code:"HELIX", name:"Helix Rotorcraft", contact:"David Park", email:"dpark@helixrotor.com", phone:"(954) 555-0303", billing:"1900 SW 4th Ave, Ft Lauderdale, FL 33315", terms:"Net 45", status:"Active", notes:"" },
+    { id:"c1", profileNum:"CUS-0001", code:"ATLAS", name:"Atlas Aviation Services", billing:"2400 NW 36th St, Miami, FL 33142", shipping:"2400 NW 36th St, Miami, FL 33142", terms:"Net 30", status:"Active", website:"atlasav.com", taxId:"65-1234567", notes:"Prefers FedEx overnight.", contacts:[{id:"ct1",name:"Robert Chen",title:"Purchasing Manager",email:"rchen@atlasav.com",phone:"(305) 555-0101",primary:true},{id:"ct2",name:"Lisa Wong",title:"AP/Accounting",email:"ap@atlasav.com",phone:"(305) 555-0102",primary:false}] },
+    { id:"c2", profileNum:"CUS-0002", code:"SKYJET", name:"SkyJet International", billing:"8000 NW 21st St, Doral, FL 33122", shipping:"8000 NW 21st St, Doral, FL 33122", terms:"Prepay", status:"Active", website:"skyjet.com", taxId:"59-7654321", notes:"Requires prepayment via proforma.", contacts:[{id:"ct3",name:"Maria Gonzalez",title:"Director of Ops",email:"mgonzalez@skyjet.com",phone:"(786) 555-0202",primary:true}] },
   ],
   vendors: [
-    { id:"v1", code:"AERO-S", name:"AeroSource Inc.", contact:"Linda Park", email:"sales@aerosource.com", phone:"(305) 555-1010", notes:"" },
-    { id:"v2", code:"GLOBAV", name:"Global Aviation Parts", contact:"Tom Ryan", email:"tryan@globav.com", phone:"(954) 555-2020", notes:"Overseas sourcing" },
-    { id:"v3", code:"PRECAV", name:"Precision Aero Supply", contact:"Sarah Klein", email:"s.klein@precav.net", phone:"(786) 555-3030", notes:"Preferred — fastest turnaround" },
+    { id:"v1", profileNum:"VEN-0001", code:"AERO-S", name:"AeroSource Inc.", address:"", website:"aerosource.com", notes:"", contacts:[{id:"vc1",name:"Linda Park",title:"Sales Rep",email:"sales@aerosource.com",phone:"(305) 555-1010",primary:true}] },
+    { id:"v2", profileNum:"VEN-0002", code:"PRECAV", name:"Precision Aero Supply", address:"", website:"precav.net", notes:"Preferred — fastest turnaround", contacts:[{id:"vc2",name:"Sarah Klein",title:"Sales Manager",email:"s.klein@precav.net",phone:"(786) 555-3030",primary:true}] },
   ],
   parts: [
     { id:"p1", pn:"HTR-204-7A", desc:"Hydraulic Pressure Regulator Valve", category:"Hydraulics", uom:"EA", notes:"" },
     { id:"p2", pn:"ACT-5512", desc:"Landing Gear Actuator", category:"Landing Gear", uom:"EA", notes:"Long lead time" },
-    { id:"p3", pn:"FLC-301B", desc:"Fuel Line Coupling", category:"Fuel System", uom:"EA", notes:"" },
   ],
   vendorQuotes: [
     { id:"vq1", partId:"p1", vendorId:"v1", cost:1250, leadDays:7, quoteDate:"2026-03-15", expires:"2026-05-15", qty:1, notes:"Standard pricing", source:"Email quote" },
-    { id:"vq2", partId:"p1", vendorId:"v3", cost:1180, leadDays:5, quoteDate:"2026-04-02", expires:"2026-06-02", qty:1, notes:"Volume discount at 5+", source:"Phone call" },
-    { id:"vq3", partId:"p2", vendorId:"v2", cost:8500, leadDays:21, quoteDate:"2026-03-20", expires:"2026-05-20", qty:1, notes:"Overseas shipping included", source:"Email quote" },
-    { id:"vq4", partId:"p3", vendorId:"v3", cost:320, leadDays:5, quoteDate:"2026-04-12", expires:"2026-06-12", qty:1, notes:"Preferred vendor pricing", source:"Email quote" },
+    { id:"vq2", partId:"p1", vendorId:"v2", cost:1180, leadDays:5, quoteDate:"2026-04-02", expires:"2026-06-02", qty:1, notes:"Volume discount at 5+", source:"Phone call" },
+    { id:"vq3", partId:"p2", vendorId:"v1", cost:8500, leadDays:21, quoteDate:"2026-03-20", expires:"2026-05-20", qty:1, notes:"", source:"Email quote" },
   ],
   customerPricing: [
     { id:"cp1", partId:"p1", customerId:"c1", sellPrice:2100, notes:"Contract rate 2024" },
     { id:"cp2", partId:"p1", customerId:"c2", sellPrice:2450, notes:"" },
-    { id:"cp3", partId:"p2", customerId:"c1", sellPrice:14500, notes:"" },
-    { id:"cp4", partId:"p3", customerId:"c3", sellPrice:595, notes:"" },
   ],
   orders: [
-    { id:"o1", orderNum:"OPS-2026-0001", customerId:"c1", partId:"p1", qty:2, unitPrice:2100, vendorId:"v3", vendorCost:1180, repairCost:150, status:"Awaiting Vendor", priority:"Normal", custPO:"PO-ATLAS-88421", dateQuoted:"2026-04-10", datePO:"2026-04-12", dateVendor:"2026-04-13", dateShip:"2026-04-22", notes:"Customer needs by end of month." },
-    { id:"o2", orderNum:"OPS-2026-0002", customerId:"c2", partId:"p2", qty:1, unitPrice:14500, vendorId:"v2", vendorCost:8500, repairCost:800, status:"Proforma Sent", priority:"High", custPO:"PO-SKY-2026-041", dateQuoted:"2026-04-05", datePO:"2026-04-08", dateVendor:"", dateShip:"", notes:"Awaiting prepayment." },
-    { id:"o3", orderNum:"OPS-2026-0003", customerId:"c3", partId:"p3", qty:5, unitPrice:595, vendorId:"", vendorCost:0, repairCost:0, status:"Quoted", priority:"Normal", custPO:"", dateQuoted:"2026-04-18", datePO:"", dateVendor:"", dateShip:"", notes:"Awaiting customer decision." },
+    { id:"o1", orderNum:"OPS-2026-0001", customerId:"c1", partId:"p1", partNumRaw:"HTR-204-7A", qty:2, unitPrice:2100, vendorId:"v2", vendorCost:1180, repairCost:150, status:"Awaiting Vendor", priority:"Normal", custPO:"PO-ATLAS-88421", dateQuoted:"2026-04-10", datePO:"2026-04-12", dateVendor:"2026-04-13", dateShip:"2026-04-22", notes:"Customer needs by end of month.", assignQuote:"e1", assignSourcing:"e1", assignRepair:"", assignShipping:"" },
+    { id:"o2", orderNum:"OPS-2026-0002", customerId:"c2", partId:"p2", partNumRaw:"ACT-5512", qty:1, unitPrice:14500, vendorId:"v1", vendorCost:8500, repairCost:800, status:"Proforma Sent", priority:"High", custPO:"PO-SKY-2026-041", dateQuoted:"2026-04-05", datePO:"2026-04-08", dateVendor:"", dateShip:"", notes:"Awaiting prepayment.", assignQuote:"e1", assignSourcing:"e2", assignRepair:"", assignShipping:"" },
   ],
   orderEvents: [
-    { id:"e1", orderId:"o1", ts:"2026-04-10T09:15:00", type:"Quote Sent", author:"You", note:"Initial quote to Robert at Atlas." },
-    { id:"e2", orderId:"o1", ts:"2026-04-12T14:30:00", type:"PO Received", author:"You", note:"PO #PO-ATLAS-88421 received." },
-    { id:"e3", orderId:"o2", ts:"2026-04-09T15:20:00", type:"Proforma Sent", author:"You", note:"Proforma invoice sent — $15,300 total." },
+    { id:"e1", orderId:"o1", ts:"2026-04-10T09:15:00", type:"Quote Sent", author:"Tatiana", note:"Initial quote to Robert at Atlas.", docs:[] },
+    { id:"e2", orderId:"o1", ts:"2026-04-12T14:30:00", type:"PO Received", author:"Tatiana", note:"PO #PO-ATLAS-88421 received.", docs:[{name:"Atlas_PO.pdf",size:"124 KB"}] },
+  ],
+  employees: [
+    { id:"e1", name:"Tatiana", role:"Account Manager", email:"", phone:"", notes:"", active:true },
+    { id:"e2", name:"Isaac", role:"Sourcing", email:"", phone:"", notes:"", active:true },
   ],
 };
 
@@ -98,8 +89,15 @@ const CUST_STATUS = ["Active","Inactive","Prospect"];
 const CUST_COLORS = { Active:"#10b981", Inactive:"#6b7280", Prospect:"#f59e0b" };
 const TERMS = ["Prepay","Net 15","Net 30","Net 45","Net 60","COD"];
 const CATEGORIES = ["Hydraulics","Landing Gear","Fuel System","Avionics","Engine","Airframe","Electrical","Other"];
-const EVENT_TYPES = ["Quote Sent","PO Received","Vendor Quote","Vendor Ordered","Part Received","Repair Started","Repair Complete","Proforma Sent","Payment Received","Shipped","Invoiced","Note","Status Change"];
+const EVENT_TYPES = ["Quote Sent","PO Received","Vendor Quote","Vendor Ordered","Part Received","Repair Started","Repair Complete","Proforma Sent","Payment Received","Shipped","Invoiced","Email","Note","Status Change"];
 const QUOTE_SOURCES = ["Email quote","Phone call","Website","Catalog","Portal","Other"];
+const STAGES = [
+  { key:"Quote", label:"Quote", assignField:"assignQuote" },
+  { key:"Sourcing", label:"Sourcing", assignField:"assignSourcing" },
+  { key:"Repair", label:"Repair", assignField:"assignRepair" },
+  { key:"Shipping", label:"Shipping", assignField:"assignShipping" },
+];
+const STAGE_BY_STATUS = { "Quoted":"Quote","PO Received":"Sourcing","Sourcing":"Sourcing","Awaiting Vendor":"Sourcing","In Repair":"Repair","Proforma Sent":"Shipping","Prepaid":"Shipping","Shipped":"Shipping","Invoiced":"Shipping","Closed":"Shipping","Cancelled":"Quote" };
 
 const fmt$ = n => "$" + Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtD = d => d ? new Date(d+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "—";
@@ -113,13 +111,18 @@ const nextOrderNum = (orders) => {
   const n = (nums.length ? Math.max.apply(null,nums) : 0) + 1;
   return "OPS-" + y + "-" + String(n).padStart(4,"0");
 };
+const nextProfileNum = (list, prefix) => {
+  const nums = list.filter(x=>x.profileNum && x.profileNum.startsWith(prefix+"-")).map(x=>parseInt(x.profileNum.split("-")[1])||0);
+  const n = (nums.length ? Math.max.apply(null, nums) : 0) + 1;
+  return prefix + "-" + String(n).padStart(4,"0");
+};
 
 const S = {
-  root: {fontFamily:"'DM Mono','Courier New',monospace",background:"#0d1117",minHeight:"100vh",color:"#e2e8f0",display:"flex"},
-  sidebar: {width:220,background:"#010409",borderRight:"1px solid #21262d",padding:"16px 0",position:"fixed",height:"100vh",overflowY:"auto",zIndex:40},
-  main: {flex:1,marginLeft:220,minHeight:"100vh"},
-  body: {padding:"24px 28px",maxWidth:1400,margin:"0 auto"},
-  card: {background:"#161b22",border:"1px solid #21262d",borderRadius:8,padding:20,marginBottom:14},
+  root: {fontFamily:"'DM Mono','Courier New',monospace",background:"#0d1117",minHeight:"100vh",color:"#e2e8f0"},
+  topbar: {background:"#010409",borderBottom:"1px solid #21262d",padding:"10px 18px",display:"flex",alignItems:"center",gap:14,position:"sticky",top:0,zIndex:50,flexWrap:"wrap"},
+  topnav: {background:"#0d1117",borderBottom:"1px solid #21262d",padding:"0 16px",display:"flex",position:"sticky",top:58,zIndex:49,overflowX:"auto",WebkitOverflowScrolling:"touch"},
+  body: {padding:"20px 18px",maxWidth:1400,margin:"0 auto"},
+  card: {background:"#161b22",border:"1px solid #21262d",borderRadius:8,padding:18,marginBottom:14},
   lbl: {color:"#8b949e",fontSize:10,letterSpacing:.8,textTransform:"uppercase",marginBottom:4,fontWeight:600},
   btn: (bg,c,b) => ({background:bg||"#21262d",border:b||"1px solid #30363d",borderRadius:6,color:c||"#c9d1d9",padding:"7px 14px",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:600,display:"inline-flex",alignItems:"center",gap:6}),
   btnP: {background:"#1f6feb",border:"none",borderRadius:6,color:"#fff",padding:"8px 16px",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,display:"inline-flex",alignItems:"center",gap:6},
@@ -128,11 +131,11 @@ const S = {
   inp: {background:"#0d1117",border:"1px solid #30363d",borderRadius:6,color:"#e2e8f0",padding:"8px 12px",fontSize:12,fontFamily:"inherit",width:"100%",outline:"none"},
   sel: {background:"#0d1117",border:"1px solid #30363d",borderRadius:6,color:"#e2e8f0",padding:"8px 12px",fontSize:12,fontFamily:"inherit",width:"100%",outline:"none"},
   overlay: {position:"fixed",inset:0,background:"#000000cc",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:20},
-  modal: {background:"#161b22",border:"1px solid #30363d",borderRadius:10,padding:24,width:"100%",maxWidth:540,maxHeight:"90vh",overflowY:"auto"},
+  modal: {background:"#161b22",border:"1px solid #30363d",borderRadius:10,padding:22,width:"100%",maxWidth:560,maxHeight:"90vh",overflowY:"auto"},
   th: {color:"#8b949e",fontSize:10,letterSpacing:.8,textTransform:"uppercase",padding:"9px 12px",textAlign:"left",borderBottom:"1px solid #21262d",fontWeight:700},
   td: {padding:"10px 12px",fontSize:12,borderBottom:"1px solid #1a2030",verticalAlign:"middle"},
-  chip: (a,c) => ({padding:"4px 12px",cursor:"pointer",fontSize:11,fontWeight:700,background:a?(c||"#1f6feb"):"#21262d",border:"1px solid "+(a?(c||"#1f6feb"):"#30363d"),borderRadius:20,color:a?"#fff":"#8b949e",fontFamily:"inherit"}),
-  navItem: (a) => ({display:"flex",alignItems:"center",gap:10,padding:"10px 16px",cursor:"pointer",fontSize:13,fontWeight:600,color:a?"#58a6ff":"#8b949e",background:a?"#161b22":"transparent",borderLeft:a?"3px solid #58a6ff":"3px solid transparent"}),
+  chip: (a,c) => ({padding:"4px 12px",cursor:"pointer",fontSize:11,fontWeight:700,background:a?(c||"#1f6feb"):"#21262d",border:"1px solid "+(a?(c||"#1f6feb"):"#30363d"),borderRadius:20,color:a?"#fff":"#8b949e",fontFamily:"inherit",whiteSpace:"nowrap"}),
+  navTab: (a) => ({padding:"12px 18px",cursor:"pointer",fontSize:12,fontWeight:700,color:a?"#58a6ff":"#8b949e",borderBottom:a?"2px solid #58a6ff":"2px solid transparent",whiteSpace:"nowrap",background:"none",border:"none",fontFamily:"inherit",borderBottomWidth:"2px"}),
 };
 
 const Badge = ({label,colors}) => { const c = colors[label]||"#6b7280"; return <span style={{background:c+"22",color:c,border:"1px solid "+c+"44",borderRadius:4,padding:"2px 8px",fontSize:10,fontWeight:700,letterSpacing:.5,whiteSpace:"nowrap"}}>{label}</span>; };
@@ -147,6 +150,8 @@ function App() {
   const [customerPricing, setCustomerPricing] = useState(() => LS.get("op_cp", SEED.customerPricing));
   const [orders, setOrders] = useState(() => LS.get("op_ord", SEED.orders));
   const [orderEvents, setOrderEvents] = useState(() => LS.get("op_ev", SEED.orderEvents));
+  const [employees, setEmployees] = useState(() => LS.get("op_emp", SEED.employees));
+  const [currentUser, setCurrentUser] = useState(() => LS.get("op_user", "Tatiana"));
 
   useEffect(() => LS.set("op_cus", customers), [customers]);
   useEffect(() => LS.set("op_ven", vendors), [vendors]);
@@ -155,6 +160,8 @@ function App() {
   useEffect(() => LS.set("op_cp", customerPricing), [customerPricing]);
   useEffect(() => LS.set("op_ord", orders), [orders]);
   useEffect(() => LS.set("op_ev", orderEvents), [orderEvents]);
+  useEffect(() => LS.set("op_emp", employees), [employees]);
+  useEffect(() => LS.set("op_user", currentUser), [currentUser]);
 
   const [view, setView] = useState("dashboard");
   const [selId, setSelId] = useState(null);
@@ -162,7 +169,6 @@ function App() {
   const [editId, setEditId] = useState(null);
   const [delTarget, setDelTarget] = useState(null);
   const [toast, setToast] = useState(null);
-  const [mobileNav, setMobileNav] = useState(false);
   const [orderSearch, setOrderSearch] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("All");
   const [partSearch, setPartSearch] = useState("");
@@ -176,32 +182,44 @@ function App() {
   const [cpForm, setCpForm] = useState({});
   const [ordForm, setOrdForm] = useState({});
   const [evtForm, setEvtForm] = useState({});
+  const [empForm, setEmpForm] = useState({});
+  const [contactForm, setContactForm] = useState({});
+  const [contactTarget, setContactTarget] = useState(null);
+  const [evtDocs, setEvtDocs] = useState([]);
+  const [dragging, setDragging] = useState(false);
+  const fileRef = useRef(null);
 
   const showToast = (msg, type) => { setToast({msg,type:type||"ok"}); setTimeout(()=>setToast(null), 2600); };
   const getCust = id => customers.find(c=>c.id===id);
   const getVen = id => vendors.find(v=>v.id===id);
   const getPart = id => parts.find(p=>p.id===id);
+  const getEmp = id => employees.find(e=>e.id===id);
   const vqForPart = pid => vendorQuotes.filter(q=>q.partId===pid).sort((a,b)=>a.cost-b.cost);
   const cpForPart = pid => customerPricing.filter(c=>c.partId===pid);
   const eventsForOrder = oid => orderEvents.filter(e=>e.orderId===oid).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+  const primaryContact = obj => (obj?.contacts||[]).find(c=>c.primary) || (obj?.contacts||[])[0];
 
   const saveCust = () => {
-    if (!custForm.name || !custForm.name.trim() || !custForm.code || !custForm.code.trim()) return showToast("Code and Name required","err");
-    const d = Object.assign({}, custForm, {code: custForm.code.toUpperCase()});
+    if (!custForm.name || !custForm.name.trim()) return showToast("Name required","err");
+    const d = Object.assign({}, custForm);
+    if (d.code) d.code = d.code.toUpperCase();
+    if (!d.contacts) d.contacts = [];
     if (modal==="editCust") setCustomers(customers.map(c=>c.id===editId?Object.assign({},d,{id:editId}):c));
-    else setCustomers(customers.concat([Object.assign({},d,{id:uid()})]));
+    else { d.profileNum = nextProfileNum(customers, "CUS"); setCustomers(customers.concat([Object.assign({},d,{id:uid()})])); }
     setModal(null); showToast("Saved.");
   };
   const saveVen = () => {
-    if (!venForm.name || !venForm.name.trim() || !venForm.code || !venForm.code.trim()) return showToast("Code and Name required","err");
-    const d = Object.assign({}, venForm, {code: venForm.code.toUpperCase()});
+    if (!venForm.name || !venForm.name.trim()) return showToast("Name required","err");
+    const d = Object.assign({}, venForm);
+    if (d.code) d.code = d.code.toUpperCase();
+    if (!d.contacts) d.contacts = [];
     if (modal==="editVen") setVendors(vendors.map(v=>v.id===editId?Object.assign({},d,{id:editId}):v));
-    else setVendors(vendors.concat([Object.assign({},d,{id:uid()})]));
+    else { d.profileNum = nextProfileNum(vendors, "VEN"); setVendors(vendors.concat([Object.assign({},d,{id:uid()})])); }
     setModal(null); showToast("Saved.");
   };
   const savePart = () => {
     if (!partForm.pn || !partForm.pn.trim()) return showToast("Part number required","err");
-    const d = Object.assign({}, partForm, {pn: partForm.pn.toUpperCase()});
+    const d = Object.assign({}, partForm, {pn: partForm.pn.toUpperCase().trim()});
     if (modal==="editPart") setParts(parts.map(p=>p.id===editId?Object.assign({},d,{id:editId}):p));
     else setParts(parts.concat([Object.assign({},d,{id:uid()})]));
     setModal(null); showToast("Saved.");
@@ -221,26 +239,72 @@ function App() {
     setModal(null); showToast("Saved.");
   };
   const saveOrd = () => {
-    if (!ordForm.customerId || !ordForm.partId) return showToast("Customer and part required","err");
-    const d = Object.assign({}, ordForm, {qty:parseInt(ordForm.qty)||1, unitPrice:parseFloat(ordForm.unitPrice)||0, vendorCost:parseFloat(ordForm.vendorCost)||0, repairCost:parseFloat(ordForm.repairCost)||0});
+    if (!ordForm.customerId) return showToast("Customer required","err");
+    // Handle part — if partNumRaw typed and no existing match, create a part
+    let partId = ordForm.partId;
+    const rawPN = (ordForm.partNumRaw||"").trim().toUpperCase();
+    if (rawPN && !partId) {
+      const existing = parts.find(p => p.pn.toUpperCase() === rawPN);
+      if (existing) partId = existing.id;
+      else {
+        const newPart = {id:uid(), pn:rawPN, desc:"", category:"Other", uom:"EA", notes:""};
+        setParts(parts.concat([newPart]));
+        partId = newPart.id;
+      }
+    }
+    const d = Object.assign({}, ordForm, {
+      partId: partId||"",
+      qty:parseInt(ordForm.qty)||1,
+      unitPrice:parseFloat(ordForm.unitPrice)||0,
+      vendorCost:parseFloat(ordForm.vendorCost)||0,
+      repairCost:parseFloat(ordForm.repairCost)||0,
+    });
     if (modal==="editOrd") {
       const prev = orders.find(o=>o.id===editId);
       if (prev && prev.status !== d.status) {
-        setOrderEvents(orderEvents.concat([{id:uid(),orderId:editId,ts:new Date().toISOString(),type:"Status Change",author:"You",note:"Status: "+prev.status+" → "+d.status}]));
+        setOrderEvents(orderEvents.concat([{id:uid(),orderId:editId,ts:new Date().toISOString(),type:"Status Change",author:currentUser,note:"Status: "+prev.status+" → "+d.status,docs:[]}]));
       }
       setOrders(orders.map(o=>o.id===editId?Object.assign({},d,{id:editId}):o));
     } else {
       const newId = uid();
       const newOrd = Object.assign({},d,{id:newId, orderNum:ordForm.orderNum||nextOrderNum(orders)});
       setOrders(orders.concat([newOrd]));
-      setOrderEvents(orderEvents.concat([{id:uid(),orderId:newId,ts:new Date().toISOString(),type:"Quote Sent",author:"You",note:"Order created — status: "+d.status}]));
+      setOrderEvents(orderEvents.concat([{id:uid(),orderId:newId,ts:new Date().toISOString(),type:"Quote Sent",author:currentUser,note:"Order created — status: "+d.status,docs:[]}]));
     }
     setModal(null); showToast("Saved.");
   };
   const saveEvt = () => {
     if (!evtForm.type || !evtForm.note || !evtForm.note.trim()) return showToast("Type and note required","err");
-    setOrderEvents(orderEvents.concat([{id:uid(), orderId:selId, ts:new Date().toISOString(), type:evtForm.type, author:evtForm.author||"You", note:evtForm.note}]));
+    setOrderEvents(orderEvents.concat([{id:uid(), orderId:selId, ts:new Date().toISOString(), type:evtForm.type, author:evtForm.author||currentUser, note:evtForm.note, docs:evtDocs}]));
+    setEvtDocs([]);
     setModal(null); showToast("Event logged.");
+  };
+  const saveEmp = () => {
+    if (!empForm.name || !empForm.name.trim()) return showToast("Name required","err");
+    const d = Object.assign({active:true}, empForm);
+    if (modal==="editEmp") setEmployees(employees.map(e=>e.id===editId?Object.assign({},d,{id:editId}):e));
+    else setEmployees(employees.concat([Object.assign({},d,{id:uid()})]));
+    setModal(null); showToast("Saved.");
+  };
+  const saveContact = () => {
+    if (!contactForm.name || !contactForm.name.trim()) return showToast("Contact name required","err");
+    const {kind, parentId, contactId} = contactTarget;
+    const list = kind==="cust" ? customers : vendors;
+    const setList = kind==="cust" ? setCustomers : setVendors;
+    const parent = list.find(x=>x.id===parentId);
+    if (!parent) return;
+    let contacts = (parent.contacts||[]).slice();
+    if (contactForm.primary) contacts = contacts.map(c=>({...c, primary:false}));
+    if (contactId) contacts = contacts.map(c=>c.id===contactId ? Object.assign({},contactForm,{id:contactId}) : c);
+    else contacts = contacts.concat([Object.assign({},contactForm,{id:uid()})]);
+    setList(list.map(x=>x.id===parentId ? Object.assign({},x,{contacts}) : x));
+    setModal(null); showToast("Contact saved.");
+  };
+  const deleteContact = (kind, parentId, contactId) => {
+    const list = kind==="cust" ? customers : vendors;
+    const setList = kind==="cust" ? setCustomers : setVendors;
+    setList(list.map(x=>x.id===parentId ? Object.assign({},x,{contacts:(x.contacts||[]).filter(c=>c.id!==contactId)}) : x));
+    showToast("Contact removed.");
   };
   const doDelete = () => {
     if (!delTarget) return;
@@ -252,38 +316,61 @@ function App() {
     if (type==="cp") setCustomerPricing(customerPricing.filter(c=>c.id!==id));
     if (type==="ord") { setOrders(orders.filter(o=>o.id!==id)); setOrderEvents(orderEvents.filter(e=>e.orderId!==id)); if (view==="orderDetail") setView("orders"); }
     if (type==="evt") setOrderEvents(orderEvents.filter(e=>e.id!==id));
+    if (type==="emp") setEmployees(employees.filter(e=>e.id!==id));
     setModal(null); setDelTarget(null); showToast("Deleted.");
   };
   const openM = (type, data) => {
     data = data || null;
-    if (type==="addCust") setCustForm({code:"",name:"",contact:"",email:"",phone:"",billing:"",terms:"Net 30",status:"Active",notes:""});
+    if (type==="addCust") setCustForm({code:"",name:"",billing:"",shipping:"",terms:"Net 30",status:"Active",website:"",taxId:"",notes:"",contacts:[]});
     if (type==="editCust") setCustForm(Object.assign({},data));
-    if (type==="addVen") setVenForm({code:"",name:"",contact:"",email:"",phone:"",notes:""});
+    if (type==="addVen") setVenForm({code:"",name:"",address:"",website:"",notes:"",contacts:[]});
     if (type==="editVen") setVenForm(Object.assign({},data));
-    if (type==="addPart") setPartForm({pn:"",desc:"",category:"Hydraulics",uom:"EA",notes:""});
+    if (type==="addPart") setPartForm({pn:"",desc:"",category:"Other",uom:"EA",notes:""});
     if (type==="editPart") setPartForm(Object.assign({},data));
     if (type==="addVQ") setVqForm({partId:(data&&data.partId)||selId,vendorId:"",cost:"",leadDays:"",quoteDate:today(),expires:"",qty:1,notes:"",source:"Email quote"});
     if (type==="editVQ") setVqForm(Object.assign({},data,{cost:String(data.cost),leadDays:String(data.leadDays||""),qty:String(data.qty||1)}));
     if (type==="addCP") setCpForm({partId:(data&&data.partId)||selId,customerId:"",sellPrice:"",notes:""});
     if (type==="editCP") setCpForm(Object.assign({},data,{sellPrice:String(data.sellPrice)}));
-    if (type==="addOrd") setOrdForm({orderNum:"",customerId:"",partId:"",qty:1,unitPrice:"",vendorId:"",vendorCost:"",repairCost:"",status:"Quoted",priority:"Normal",custPO:"",dateQuoted:today(),datePO:"",dateVendor:"",dateShip:"",notes:""});
-    if (type==="editOrd") setOrdForm(Object.assign({},data,{qty:String(data.qty),unitPrice:String(data.unitPrice),vendorCost:String(data.vendorCost),repairCost:String(data.repairCost)}));
-    if (type==="addEvt") setEvtForm({type:"Note",author:"You",note:""});
-    setEditId(data ? data.id : null);
+    if (type==="addOrd") setOrdForm({orderNum:"",customerId:"",partId:"",partNumRaw:"",qty:1,unitPrice:"",vendorId:"",vendorCost:"",repairCost:"",status:"Quoted",priority:"Normal",custPO:"",dateQuoted:today(),datePO:"",dateVendor:"",dateShip:"",notes:"",assignQuote:"",assignSourcing:"",assignRepair:"",assignShipping:""});
+    if (type==="editOrd") setOrdForm(Object.assign({partNumRaw:data.partId?(getPart(data.partId)?.pn||""):""},data,{qty:String(data.qty),unitPrice:String(data.unitPrice),vendorCost:String(data.vendorCost),repairCost:String(data.repairCost)}));
+    if (type==="addEvt") { setEvtForm({type:"Note",author:currentUser,note:""}); setEvtDocs([]); }
+    if (type==="addEmp") setEmpForm({name:"",role:"",email:"",phone:"",notes:"",active:true});
+    if (type==="editEmp") setEmpForm(Object.assign({},data));
+    if (type==="contact") { setContactTarget(data); setContactForm(data.existing||{name:"",title:"",email:"",phone:"",primary:false}); }
+    setEditId(data?.id||null);
     setModal(type);
   };
   const askDel = (type,id,label) => { setDelTarget({type,id,label}); setModal("del"); };
+  const assignToStage = (order, field, empId) => {
+    const u = Object.assign({},order,{[field]:empId});
+    setOrders(orders.map(o=>o.id===order.id?u:o));
+    const emp = empId?getEmp(empId):null;
+    const stage = STAGES.find(s=>s.assignField===field);
+    setOrderEvents(orderEvents.concat([{id:uid(),orderId:order.id,ts:new Date().toISOString(),type:"Note",author:currentUser,note:(emp?(stage.label+" assigned to "+emp.name):(stage.label+" unassigned")),docs:[]}]));
+  };
+
+  const handleFiles = (files) => {
+    const list = Array.from(files).map(f=>({name:f.name,size:(f.size/1024).toFixed(0)+" KB",type:f.type||"file"}));
+    setEvtDocs(evtDocs.concat(list));
+  };
 
   const exportXLSX = () => {
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(customers), "Customers");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(vendors), "Vendors");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(customers.map(c=>({
+      "Profile #":c.profileNum,Code:c.code,Name:c.name,"Primary Contact":primaryContact(c)?.name||"","Primary Email":primaryContact(c)?.email||"","Primary Phone":primaryContact(c)?.phone||"",Billing:c.billing,Shipping:c.shipping,Terms:c.terms,Status:c.status,Website:c.website,"Tax ID":c.taxId,Notes:c.notes
+    }))), "Customers");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(vendors.map(v=>({
+      "Profile #":v.profileNum,Code:v.code,Name:v.name,"Primary Contact":primaryContact(v)?.name||"","Primary Email":primaryContact(v)?.email||"","Primary Phone":primaryContact(v)?.phone||"",Website:v.website,Notes:v.notes
+    }))), "Vendors");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(parts.map(p=>({"Part Number":p.pn,Description:p.desc,Category:p.category,UOM:p.uom,Notes:p.notes}))), "Parts");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(vendorQuotes.map(q=>{const part=getPart(q.partId);const ven=getVen(q.vendorId);return{"Part Number":part?part.pn:"",Vendor:ven?ven.name:"",Cost:q.cost,"Lead Days":q.leadDays,Qty:q.qty,"Quote Date":q.quoteDate,Expires:q.expires,Source:q.source,Notes:q.notes};})), "Vendor Quotes");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(customerPricing.map(c=>{const part=getPart(c.partId);const cust=getCust(c.customerId);return{"Part Number":part?part.pn:"",Customer:cust?cust.name:"","Sell Price":c.sellPrice,Notes:c.notes};})), "Customer Pricing");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(orders.map(o=>{const cust=getCust(o.customerId);const part=getPart(o.partId);const ven=getVen(o.vendorId);return{"Order #":o.orderNum,Customer:cust?cust.name:"","Part #":part?part.pn:"",Qty:o.qty,"Unit Price":o.unitPrice,Total:o.qty*o.unitPrice,Vendor:ven?ven.name:"","Vendor Cost":o.vendorCost,"Repair Cost":o.repairCost,Margin:(o.qty*o.unitPrice)-(o.qty*o.vendorCost)-(o.qty*o.repairCost),Status:o.status,Priority:o.priority,"Customer PO":o.custPO,"Date Quoted":o.dateQuoted,"Date PO":o.datePO,"Date Vendor":o.dateVendor,"Date Ship":o.dateShip,Notes:o.notes};})), "Orders");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(orders.map(o=>{const cust=getCust(o.customerId);const part=getPart(o.partId);const ven=getVen(o.vendorId);return{"Order #":o.orderNum,Customer:cust?cust.name:"","Part #":part?part.pn:(o.partNumRaw||""),Qty:o.qty,"Unit Price":o.unitPrice,Total:o.qty*o.unitPrice,Vendor:ven?ven.name:"","Vendor Cost":o.vendorCost,"Repair Cost":o.repairCost,Margin:(o.qty*o.unitPrice)-(o.qty*o.vendorCost)-(o.qty*o.repairCost),Status:o.status,Priority:o.priority,"Customer PO":o.custPO,"Date Quoted":o.dateQuoted,"Date PO":o.datePO,"Date Vendor":o.dateVendor,"Date Ship":o.dateShip,"Quote Owner":getEmp(o.assignQuote)?.name||"","Sourcing Owner":getEmp(o.assignSourcing)?.name||"","Repair Owner":getEmp(o.assignRepair)?.name||"","Shipping Owner":getEmp(o.assignShipping)?.name||"",Notes:o.notes};})), "Orders");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(employees.map(e=>({Name:e.name,Role:e.role,Email:e.email,Phone:e.phone,Active:e.active?"Yes":"No",Notes:e.notes}))), "Team");
     XLSX.writeFile(wb, "OpsCore_Export_" + today() + ".xlsx");
   };
+
+  // ── VIEWS ──
 
   const Dashboard = () => {
     const openOrders = orders.filter(o=>["Closed","Cancelled","Invoiced","Shipped"].indexOf(o.status)===-1);
@@ -292,26 +379,20 @@ function App() {
     const totalPipeline = openOrders.reduce((s,o)=>s+(o.qty*o.unitPrice),0);
     return (
       <div className="fade">
-        <div style={{marginBottom:20}}>
-          <h1 style={{fontSize:22,fontWeight:700,color:"#f0f6fc"}}>Dashboard</h1>
-          <p style={{color:"#8b949e",fontSize:12,marginTop:4}}>Aviation parts operations overview</p>
-        </div>
+        <div style={{marginBottom:20}}><h1 style={{fontSize:22,fontWeight:700,color:"#f0f6fc"}}>Dashboard</h1><p style={{color:"#8b949e",fontSize:12,marginTop:4}}>Aviation parts operations overview</p></div>
         <div className="stat-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
           {[{l:"Open Orders",v:openOrders.length,c:"#58a6ff"},{l:"Pipeline Value",v:fmt$(totalPipeline),c:"#58a6ff"},{l:"Awaiting Payment",v:awaitingPayment.length,c:"#eab308"},{l:"Ready to Ship",v:readyShip.length,c:"#10b981"}].map(s=>(
-            <div key={s.l} style={Object.assign({},S.card,{padding:"16px 18px",marginBottom:0})}>
-              <div style={S.lbl}>{s.l}</div>
-              <div style={{fontSize:22,fontWeight:700,color:s.c,marginTop:6}}>{s.v}</div>
-            </div>
+            <div key={s.l} style={Object.assign({},S.card,{padding:"16px 18px",marginBottom:0})}><div style={S.lbl}>{s.l}</div><div style={{fontSize:22,fontWeight:700,color:s.c,marginTop:6}}>{s.v}</div></div>
           ))}
         </div>
         <div style={S.card}>
           <h2 style={{fontSize:14,fontWeight:700,color:"#f0f6fc",marginBottom:14}}>Order Pipeline</h2>
           <div className="pipeline-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8}}>
-            {ORDER_STATUSES.filter(s=>["Closed","Cancelled"].indexOf(s)===-1).map(status=>{
+            {ORDER_STATUSES.filter(s=>["Closed"].indexOf(s)===-1).map(status=>{
               const count = orders.filter(o=>o.status===status).length;
               const c = STATUS_COLORS[status];
               return (
-                <div key={status} style={{background:"#0d1117",border:"1px solid "+c+"33",borderRadius:6,padding:"10px 12px",cursor:"pointer"}} onClick={()=>setView("orders")}>
+                <div key={status} style={{background:"#0d1117",border:"1px solid "+c+"33",borderRadius:6,padding:"10px 12px",cursor:"pointer"}} onClick={()=>{setOrderStatusFilter(status);setView("orders");}}>
                   <div style={{fontSize:10,color:c,fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{status}</div>
                   <div style={{fontSize:20,fontWeight:700,color:"#f0f6fc",marginTop:3}}>{count}</div>
                 </div>
@@ -325,19 +406,16 @@ function App() {
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr>{["Order #","Customer","Part","Qty","Total","Status"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
             <tbody>
-              {orders.slice(0,5).map(o=>{
-                const cust=getCust(o.customerId);const part=getPart(o.partId);
-                return (
-                  <tr key={o.id} className="hover-row" style={{cursor:"pointer"}} onClick={()=>{setSelId(o.id);setView("orderDetail");}}>
-                    <td style={Object.assign({},S.td,{fontWeight:600,color:"#58a6ff"})}>{o.orderNum}</td>
-                    <td style={S.td}>{cust?cust.name:"—"}</td>
-                    <td style={Object.assign({},S.td,{fontFamily:"monospace"})}>{part?part.pn:"—"}</td>
-                    <td style={S.td}>{o.qty}</td>
-                    <td style={Object.assign({},S.td,{fontWeight:600})}>{fmt$(o.qty*o.unitPrice)}</td>
-                    <td style={S.td}><Badge label={o.status} colors={STATUS_COLORS} /></td>
-                  </tr>
-                );
-              })}
+              {orders.slice(0,5).map(o=>{const cust=getCust(o.customerId);const part=getPart(o.partId);return (
+                <tr key={o.id} className="hover-row" style={{cursor:"pointer"}} onClick={()=>{setSelId(o.id);setView("orderDetail");}}>
+                  <td style={Object.assign({},S.td,{fontWeight:600,color:"#58a6ff"})}>{o.orderNum}</td>
+                  <td style={S.td}>{cust?cust.name:"—"}</td>
+                  <td style={Object.assign({},S.td,{fontFamily:"monospace"})}>{part?part.pn:(o.partNumRaw||"—")}</td>
+                  <td style={S.td}>{o.qty}</td>
+                  <td style={Object.assign({},S.td,{fontWeight:600})}>{fmt$(o.qty*o.unitPrice)}</td>
+                  <td style={S.td}><Badge label={o.status} colors={STATUS_COLORS} /></td>
+                </tr>
+              );})}
             </tbody>
           </table>
           </div>
@@ -346,11 +424,35 @@ function App() {
     );
   };
 
+  const StageTag = ({order, stage}) => {
+    const empId = order[stage.assignField];
+    const emp = empId ? getEmp(empId) : null;
+    const currentStage = STAGE_BY_STATUS[order.status];
+    const isCurrent = stage.key === currentStage;
+    const color = emp ? "#58a6ff" : "#6b7280";
+    return (
+      <div style={{display:"inline-flex",alignItems:"center",gap:6,background:isCurrent?"#1f6feb22":"#21262d",border:`1px solid ${isCurrent?"#1f6feb66":"#30363d"}`,borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}} onClick={()=>{
+        const names = employees.filter(e=>e.active).map(e=>e.name);
+        const opts = ["(none)"].concat(employees.filter(e=>e.active).map(e=>e.name));
+        const choice = prompt(stage.label+" — assign to (type exactly):\n\n"+opts.join("\n")+"\n\nCurrent: "+(emp?emp.name:"none"));
+        if (choice===null) return;
+        if (choice==="(none)"||choice==="") { assignToStage(order, stage.assignField, ""); return; }
+        const found = employees.find(e=>e.name.toLowerCase()===choice.toLowerCase());
+        if (!found) { showToast("No employee by that name","err"); return; }
+        assignToStage(order, stage.assignField, found.id);
+      }}>
+        <span style={{color:isCurrent?"#58a6ff":"#8b949e",fontSize:10,textTransform:"uppercase",letterSpacing:.5}}>{stage.label}</span>
+        <span style={{color:emp?"#c9d1d9":"#6b7280"}}>→</span>
+        <span style={{color}}>{emp?emp.name:"unassigned"}</span>
+      </div>
+    );
+  };
+
   const OrdersView = () => {
     const filtered = orders.filter(o=>{
       const s = orderSearch.toLowerCase();
       const cust=getCust(o.customerId);const part=getPart(o.partId);
-      const matchS = !s || [o.orderNum,o.custPO,cust?cust.name:"",part?part.pn:""].some(v=>(v||"").toLowerCase().indexOf(s)>=0);
+      const matchS = !s || [o.orderNum,o.custPO,cust?cust.name:"",part?part.pn:"",o.partNumRaw].some(v=>(v||"").toLowerCase().indexOf(s)>=0);
       const matchF = orderStatusFilter==="All" || o.status===orderStatusFilter;
       return matchS && matchF;
     });
@@ -361,30 +463,32 @@ function App() {
           <button style={S.btnP} onClick={()=>openM("addOrd")}>+ New Order</button>
         </div>
         <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
-          <input style={Object.assign({},S.inp,{maxWidth:340})} placeholder="Search order #, customer, part..." value={orderSearch} onChange={e=>setOrderSearch(e.target.value)} />
+          <input style={Object.assign({},S.inp,{maxWidth:340})} placeholder="Search order #, customer, PO, part..." value={orderSearch} onChange={e=>setOrderSearch(e.target.value)} />
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
             {["All"].concat(ORDER_STATUSES).map(s=><button key={s} style={S.chip(orderStatusFilter===s, s==="All"?"#1f6feb":STATUS_COLORS[s])} onClick={()=>setOrderStatusFilter(s)}>{s}</button>)}
           </div>
         </div>
         <div style={Object.assign({},S.card,{padding:0,overflowX:"auto"})}>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
-            <thead><tr>{["Order #","Priority","Customer","Cust PO","Part #","Qty","Total","Margin","Status",""].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+            <thead><tr>{["Order #","Priority","Customer","Cust PO","Part #","Qty","Total","Status","Owner",""].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
             <tbody>
               {filtered.map(o=>{
                 const total = o.qty*o.unitPrice;
-                const margin = total - (o.qty*o.vendorCost) - (o.qty*o.repairCost);
                 const cust=getCust(o.customerId);const part=getPart(o.partId);
+                const stageKey = STAGE_BY_STATUS[o.status];
+                const stage = STAGES.find(s=>s.key===stageKey);
+                const owner = stage ? getEmp(o[stage.assignField]) : null;
                 return (
                   <tr key={o.id} className="hover-row">
                     <td style={Object.assign({},S.td,{fontWeight:600,color:"#58a6ff",cursor:"pointer"})} onClick={()=>{setSelId(o.id);setView("orderDetail");}}>{o.orderNum}</td>
                     <td style={S.td}><Badge label={o.priority} colors={PRIORITY_COLORS} /></td>
                     <td style={S.td}>{cust?cust.name:"—"}</td>
                     <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{o.custPO||"—"}</td>
-                    <td style={Object.assign({},S.td,{fontFamily:"monospace"})}>{part?part.pn:"—"}</td>
+                    <td style={Object.assign({},S.td,{fontFamily:"monospace"})}>{part?part.pn:(o.partNumRaw||"—")}</td>
                     <td style={S.td}>{o.qty}</td>
                     <td style={Object.assign({},S.td,{fontWeight:600})}>{fmt$(total)}</td>
-                    <td style={Object.assign({},S.td,{color:margin>=0?"#10b981":"#f85149",fontWeight:600})}>{fmt$(margin)}</td>
                     <td style={S.td}><Badge label={o.status} colors={STATUS_COLORS} /></td>
+                    <td style={Object.assign({},S.td,{color:owner?"#58a6ff":"#8b949e",fontSize:11})}>{owner?owner.name:"—"}</td>
                     <td style={S.td}>
                       <button style={S.ico("#8b949e")} onClick={()=>openM("editOrd",o)}>✎</button>
                       <button style={S.ico("#f85149")} onClick={()=>askDel("ord",o.id,o.orderNum)}>🗑</button>
@@ -404,14 +508,14 @@ function App() {
     const o = orders.find(x=>x.id===selId);
     if (!o) return <div>Order not found.</div>;
     const cust = getCust(o.customerId); const part = getPart(o.partId); const ven = getVen(o.vendorId);
-    const events = eventsForOrder(o.id); const quotes = vqForPart(o.partId);
+    const events = eventsForOrder(o.id); const quotes = part ? vqForPart(part.id) : [];
     const total = o.qty*o.unitPrice;
     const margin = total - (o.qty*o.vendorCost) - (o.qty*o.repairCost);
     const marginPct = total>0 ? (margin/total*100).toFixed(1) : "0.0";
     return (
       <div className="fade">
         <button style={{background:"none",border:"none",color:"#58a6ff",cursor:"pointer",fontSize:12,fontFamily:"inherit",padding:0,marginBottom:14}} onClick={()=>setView("orders")}>← Orders</button>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18,flexWrap:"wrap",gap:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14,flexWrap:"wrap",gap:12}}>
           <div>
             <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:6}}>
               <h1 style={{fontSize:22,fontWeight:700,color:"#f0f6fc"}}>{o.orderNum}</h1>
@@ -424,6 +528,10 @@ function App() {
             <button style={S.btn()} onClick={()=>openM("editOrd",o)}>Edit</button>
             <button style={S.btnD} onClick={()=>askDel("ord",o.id,o.orderNum)}>Delete</button>
           </div>
+        </div>
+        <div style={S.card}>
+          <div style={S.lbl}>Stage Assignments — tap any to change</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:8}}>{STAGES.map(s=><StageTag key={s.key} order={o} stage={s} />)}</div>
         </div>
         <div className="detail-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
           <div style={S.card}>
@@ -439,8 +547,8 @@ function App() {
           </div>
           <div style={S.card}>
             <h2 style={{fontSize:13,fontWeight:700,color:"#f0f6fc",marginBottom:14}}>Customer & Part</h2>
-            <div style={{marginBottom:12}}><div style={S.lbl}>Customer</div><div style={{fontSize:13,color:"#f0f6fc",fontWeight:600}}>{cust?cust.name:"—"}</div></div>
-            <div style={{marginBottom:12}}><div style={S.lbl}>Part</div><div style={{fontSize:13,color:"#f0f6fc",fontWeight:600,fontFamily:"monospace"}}>{part?part.pn:"—"}</div>{part && <div style={{fontSize:11,color:"#8b949e",marginTop:2}}>{part.desc}</div>}</div>
+            <div style={{marginBottom:12}}><div style={S.lbl}>Customer</div>{cust ? <div style={{fontSize:13,color:"#58a6ff",fontWeight:600,cursor:"pointer"}} onClick={()=>{setSelId(cust.id);setView("custDetail");}}>{cust.name}</div> : <div>—</div>}</div>
+            <div style={{marginBottom:12}}><div style={S.lbl}>Part</div><div style={{fontSize:13,color:"#f0f6fc",fontWeight:600,fontFamily:"monospace"}}>{part?part.pn:(o.partNumRaw||"—")}</div>{part && <div style={{fontSize:11,color:"#8b949e",marginTop:2}}>{part.desc||"No description"}</div>}</div>
             <div><div style={S.lbl}>Vendor</div><div style={{fontSize:13,color:"#f0f6fc",fontWeight:600}}>{ven?ven.name:"—"}</div></div>
           </div>
         </div>
@@ -449,22 +557,18 @@ function App() {
             <h2 style={{fontSize:13,fontWeight:700,color:"#f0f6fc",marginBottom:14}}>Vendor Quote History — {part?part.pn:""}</h2>
             <div style={{overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead><tr>{["","Vendor","Cost","Lead","Qty","Date","Expires"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+              <thead><tr>{["","Vendor","Cost","Lead","Date","Expires"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
               <tbody>
-                {quotes.map((q,i)=>{
-                  const exp = isExpired(q.expires); const v=getVen(q.vendorId);
-                  return (
-                    <tr key={q.id} style={{background:i===0?"#10b98108":"transparent"}}>
-                      <td style={S.td}>{i===0 && <span style={{color:"#10b981"}}>★</span>}</td>
-                      <td style={S.td}>{v?v.name:"—"}</td>
-                      <td style={Object.assign({},S.td,{fontWeight:600})}>{fmt$(q.cost)}</td>
-                      <td style={Object.assign({},S.td,{color:"#8b949e"})}>{q.leadDays}d</td>
-                      <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>qty {q.qty}+</td>
-                      <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{fmtD(q.quoteDate)}</td>
-                      <td style={Object.assign({},S.td,{color:exp?"#f85149":"#8b949e",fontSize:11})}>{fmtD(q.expires)}{exp?" ⚠":""}</td>
-                    </tr>
-                  );
-                })}
+                {quotes.map((q,i)=>{const exp=isExpired(q.expires);const v=getVen(q.vendorId);return (
+                  <tr key={q.id} style={{background:i===0?"#10b98108":"transparent"}}>
+                    <td style={S.td}>{i===0 && <span style={{color:"#10b981"}}>★</span>}</td>
+                    <td style={S.td}>{v?v.name:"—"}</td>
+                    <td style={Object.assign({},S.td,{fontWeight:600})}>{fmt$(q.cost)}</td>
+                    <td style={Object.assign({},S.td,{color:"#8b949e"})}>{q.leadDays}d</td>
+                    <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{fmtD(q.quoteDate)}</td>
+                    <td style={Object.assign({},S.td,{color:exp?"#f85149":"#8b949e",fontSize:11})}>{fmtD(q.expires)}{exp?" ⚠":""}</td>
+                  </tr>
+                );})}
               </tbody>
             </table>
             </div>
@@ -481,7 +585,7 @@ function App() {
             <div key={e.id} style={{display:"flex",gap:10,marginBottom:10,paddingBottom:10,borderBottom:"1px solid #21262d"}}>
               <div style={{width:32,height:32,borderRadius:"50%",background:"#1f6feb22",border:"1px solid #1f6feb55",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#58a6ff",flexShrink:0}}>{(e.author||"?").slice(0,2).toUpperCase()}</div>
               <div style={{flex:1}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,flexWrap:"wrap",gap:4}}>
                   <div style={{display:"flex",gap:8,alignItems:"center"}}>
                     <span style={{color:"#58a6ff",fontSize:11,fontWeight:700}}>{e.author}</span>
                     <span style={{background:"#1f6feb22",color:"#58a6ff",border:"1px solid #1f6feb44",borderRadius:3,padding:"1px 6px",fontSize:10,fontWeight:700}}>{e.type}</span>
@@ -492,6 +596,9 @@ function App() {
                   </div>
                 </div>
                 <div style={{color:"#c9d1d9",fontSize:12,lineHeight:1.5}}>{e.note}</div>
+                {(e.docs||[]).length>0 && <div style={{marginTop:6,display:"flex",gap:6,flexWrap:"wrap"}}>{e.docs.map((d,i)=>(
+                  <div key={i} style={{background:"#21262d",border:"1px solid #30363d",borderRadius:4,padding:"3px 8px",fontSize:11,color:"#c9d1d9"}}>📎 {d.name} <span style={{color:"#8b949e"}}>({d.size})</span></div>
+                ))}</div>}
               </div>
             </div>
           ))}
@@ -501,35 +608,30 @@ function App() {
   };
 
   const PartsView = () => {
-    const filtered = parts.filter(p=>[p.pn,p.desc,p.category].some(v=>(v||"").toLowerCase().indexOf(partSearch.toLowerCase())>=0));
+    const filtered = parts.filter(p=>[p.pn,p.desc,p.category,p.notes].some(v=>(v||"").toLowerCase().indexOf(partSearch.toLowerCase())>=0));
     return (
       <div className="fade">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,flexWrap:"wrap",gap:12}}>
-          <div><h1 style={{fontSize:22,fontWeight:700,color:"#f0f6fc"}}>Parts Catalog</h1><p style={{color:"#8b949e",fontSize:12,marginTop:4}}>Parts with vendor quotes and customer pricing</p></div>
+          <div><h1 style={{fontSize:22,fontWeight:700,color:"#f0f6fc"}}>Parts Database</h1><p style={{color:"#8b949e",fontSize:12,marginTop:4}}>Search by part # or description — every part ever bought or sold</p></div>
           <button style={S.btnP} onClick={()=>openM("addPart")}>+ New Part</button>
         </div>
-        <input style={Object.assign({},S.inp,{maxWidth:340,marginBottom:16})} placeholder="Search..." value={partSearch} onChange={e=>setPartSearch(e.target.value)} />
+        <input style={Object.assign({},S.inp,{maxWidth:420,marginBottom:16})} placeholder="Search part #, description, category, notes..." value={partSearch} onChange={e=>setPartSearch(e.target.value)} />
         <div style={Object.assign({},S.card,{padding:0,overflowX:"auto"})}>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
-            <thead><tr>{["Part #","Description","Category","Quotes","Prices",""].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+            <thead><tr>{["Part #","Description","Category","Quotes","Low Cost","Orders",""].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
             <tbody>
-              {filtered.map(p=>{
-                const vqs=vqForPart(p.id);const cps=cpForPart(p.id);const low=vqs[0];
-                return (
-                  <tr key={p.id} className="hover-row">
-                    <td style={Object.assign({},S.td,{fontWeight:600,color:"#58a6ff",cursor:"pointer",fontFamily:"monospace"})} onClick={()=>{setSelId(p.id);setView("partDetail");}}>{p.pn}</td>
-                    <td style={S.td}>{p.desc}</td>
-                    <td style={S.td}>{p.category}</td>
-                    <td style={S.td}>{vqs.length} {low && <span style={{color:"#10b981",fontSize:11,marginLeft:4}}>low {fmt$(low.cost)}</span>}</td>
-                    <td style={S.td}>{cps.length}</td>
-                    <td style={S.td}>
-                      <button style={S.ico("#8b949e")} onClick={()=>openM("editPart",p)}>✎</button>
-                      <button style={S.ico("#f85149")} onClick={()=>askDel("part",p.id,p.pn)}>🗑</button>
-                    </td>
-                  </tr>
-                );
-              })}
-              {filtered.length===0 && <tr><td colSpan={6} style={Object.assign({},S.td,{textAlign:"center",color:"#8b949e",padding:40})}>No parts.</td></tr>}
+              {filtered.map(p=>{const vqs=vqForPart(p.id);const low=vqs[0];const oc=orders.filter(o=>o.partId===p.id).length;return (
+                <tr key={p.id} className="hover-row">
+                  <td style={Object.assign({},S.td,{fontWeight:600,color:"#58a6ff",cursor:"pointer",fontFamily:"monospace"})} onClick={()=>{setSelId(p.id);setView("partDetail");}}>{p.pn}</td>
+                  <td style={S.td}>{p.desc||<span style={{color:"#6b7280"}}>—</span>}</td>
+                  <td style={S.td}>{p.category||"—"}</td>
+                  <td style={S.td}>{vqs.length}</td>
+                  <td style={Object.assign({},S.td,{color:low?"#10b981":"#6b7280",fontWeight:600})}>{low?fmt$(low.cost):"—"}</td>
+                  <td style={S.td}>{oc}</td>
+                  <td style={S.td}><button style={S.ico("#8b949e")} onClick={()=>openM("editPart",p)}>✎</button><button style={S.ico("#f85149")} onClick={()=>askDel("part",p.id,p.pn)}>🗑</button></td>
+                </tr>
+              );})}
+              {filtered.length===0 && <tr><td colSpan={7} style={Object.assign({},S.td,{textAlign:"center",color:"#8b949e",padding:40})}>No parts found.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -541,50 +643,42 @@ function App() {
     const p = parts.find(x=>x.id===selId);
     if (!p) return <div>Part not found.</div>;
     const vqs=vqForPart(p.id); const cps=cpForPart(p.id);
+    const ordersForPart = orders.filter(o=>o.partId===p.id);
     return (
       <div className="fade">
-        <button style={{background:"none",border:"none",color:"#58a6ff",cursor:"pointer",fontSize:12,fontFamily:"inherit",padding:0,marginBottom:14}} onClick={()=>setView("parts")}>← Parts</button>
+        <button style={{background:"none",border:"none",color:"#58a6ff",cursor:"pointer",fontSize:12,fontFamily:"inherit",padding:0,marginBottom:14}} onClick={()=>setView("parts")}>← Parts Database</button>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18,flexWrap:"wrap",gap:12}}>
           <div>
             <h1 style={{fontSize:22,fontWeight:700,color:"#f0f6fc",fontFamily:"monospace"}}>{p.pn}</h1>
-            <p style={{color:"#c9d1d9",fontSize:13,marginTop:4}}>{p.desc}</p>
-            <div style={{color:"#8b949e",fontSize:11,marginTop:6}}>{p.category} · {p.uom}</div>
+            {p.desc && <p style={{color:"#c9d1d9",fontSize:13,marginTop:4}}>{p.desc}</p>}
+            <div style={{color:"#8b949e",fontSize:11,marginTop:6}}>{p.category||"Uncategorized"} · {p.uom||"EA"}</div>
           </div>
-          <div style={{display:"flex",gap:8}}>
-            <button style={S.btn()} onClick={()=>openM("editPart",p)}>Edit</button>
-            <button style={S.btnD} onClick={()=>askDel("part",p.id,p.pn)}>Delete</button>
-          </div>
+          <div style={{display:"flex",gap:8}}><button style={S.btn()} onClick={()=>openM("editPart",p)}>Edit</button><button style={S.btnD} onClick={()=>askDel("part",p.id,p.pn)}>Delete</button></div>
         </div>
+        {p.notes && <div style={S.card}><div style={S.lbl}>Notes</div><p style={{color:"#c9d1d9",fontSize:12,lineHeight:1.7,marginTop:4}}>{p.notes}</p></div>}
         <div style={S.card}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
-            <h2 style={{fontSize:14,fontWeight:700,color:"#f0f6fc"}}>Vendor Quote History</h2>
+            <h2 style={{fontSize:14,fontWeight:700,color:"#f0f6fc"}}>Vendor Quote History ({vqs.length})</h2>
             <button style={S.btnP} onClick={()=>openM("addVQ",{partId:p.id})}>+ Log Quote</button>
           </div>
-          {vqs.length===0 ? <p style={{color:"#8b949e",fontSize:12,fontStyle:"italic",padding:"20px 0",textAlign:"center"}}>No quotes yet.</p> : (
+          {vqs.length===0 ? <p style={{color:"#8b949e",fontSize:12,fontStyle:"italic",padding:"20px 0",textAlign:"center"}}>No vendor quotes yet.</p> : (
             <div style={{overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead><tr>{["","Vendor","Cost","Lead","Qty","Date","Expires","Source","Notes",""].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+              <thead><tr>{["","Vendor","Cost","Lead","Qty","Date","Expires","Source",""].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
               <tbody>
-                {vqs.map((q,i)=>{
-                  const exp=isExpired(q.expires); const v=getVen(q.vendorId);
-                  return (
-                    <tr key={q.id} className="hover-row" style={{background:i===0?"#10b98108":"transparent"}}>
-                      <td style={S.td}>{i===0 && <span style={{color:"#10b981"}}>★</span>}</td>
-                      <td style={S.td}><div style={{fontWeight:600}}>{v?v.name:"—"}</div><div style={{fontSize:10,color:"#8b949e"}}>{v?v.code:""}</div></td>
-                      <td style={Object.assign({},S.td,{fontWeight:700,color:i===0?"#10b981":"#f0f6fc"})}>{fmt$(q.cost)}</td>
-                      <td style={Object.assign({},S.td,{color:"#c9d1d9"})}>{q.leadDays}d</td>
-                      <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>qty {q.qty}+</td>
-                      <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{fmtD(q.quoteDate)}</td>
-                      <td style={Object.assign({},S.td,{color:exp?"#f85149":"#8b949e",fontSize:11})}>{fmtD(q.expires)}{exp?" ⚠":""}</td>
-                      <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{q.source}</td>
-                      <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{q.notes||"—"}</td>
-                      <td style={S.td}>
-                        <button style={S.ico("#8b949e")} onClick={()=>openM("editVQ",q)}>✎</button>
-                        <button style={S.ico("#f85149")} onClick={()=>askDel("vq",q.id,"quote")}>🗑</button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {vqs.map((q,i)=>{const exp=isExpired(q.expires);const v=getVen(q.vendorId);return (
+                  <tr key={q.id} className="hover-row" style={{background:i===0?"#10b98108":"transparent"}}>
+                    <td style={S.td}>{i===0 && <span style={{color:"#10b981"}}>★</span>}</td>
+                    <td style={S.td}>{v?v.name:"—"}</td>
+                    <td style={Object.assign({},S.td,{fontWeight:700,color:i===0?"#10b981":"#f0f6fc"})}>{fmt$(q.cost)}</td>
+                    <td style={Object.assign({},S.td,{color:"#c9d1d9"})}>{q.leadDays}d</td>
+                    <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>qty {q.qty}+</td>
+                    <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{fmtD(q.quoteDate)}</td>
+                    <td style={Object.assign({},S.td,{color:exp?"#f85149":"#8b949e",fontSize:11})}>{fmtD(q.expires)}{exp?" ⚠":""}</td>
+                    <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{q.source}</td>
+                    <td style={S.td}><button style={S.ico("#8b949e")} onClick={()=>openM("editVQ",q)}>✎</button><button style={S.ico("#f85149")} onClick={()=>askDel("vq",q.id,"quote")}>🗑</button></td>
+                  </tr>
+                );})}
               </tbody>
             </table>
             </div>
@@ -592,167 +686,229 @@ function App() {
         </div>
         <div style={S.card}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
-            <h2 style={{fontSize:14,fontWeight:700,color:"#f0f6fc"}}>Customer Pricing</h2>
+            <h2 style={{fontSize:14,fontWeight:700,color:"#f0f6fc"}}>Customer Pricing ({cps.length})</h2>
             <button style={S.btnP} onClick={()=>openM("addCP",{partId:p.id})}>+ Add Price</button>
           </div>
           {cps.length===0 ? <p style={{color:"#8b949e",fontSize:12,fontStyle:"italic",padding:"20px 0",textAlign:"center"}}>No customer pricing.</p> : (
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr>{["Customer","Sell Price","Margin vs Low","Notes",""].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-              <tbody>
-                {cps.map(cp=>{
-                  const lowVQ=vqs[0];const marg=lowVQ?cp.sellPrice-lowVQ.cost:null;const c=getCust(cp.customerId);
-                  return (
-                    <tr key={cp.id}>
-                      <td style={Object.assign({},S.td,{fontWeight:600})}>{c?c.name:"—"}</td>
-                      <td style={Object.assign({},S.td,{fontWeight:700,color:"#58a6ff"})}>{fmt$(cp.sellPrice)}</td>
-                      <td style={S.td}>{marg!==null ? <span style={{color:marg>=0?"#10b981":"#f85149",fontWeight:600}}>{fmt$(marg)}</span> : "—"}</td>
-                      <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{cp.notes||"—"}</td>
-                      <td style={S.td}>
-                        <button style={S.ico("#8b949e")} onClick={()=>openM("editCP",cp)}>✎</button>
-                        <button style={S.ico("#f85149")} onClick={()=>askDel("cp",cp.id,c?c.name:"")}>🗑</button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+              <tbody>{cps.map(cp=>{const lowVQ=vqs[0];const marg=lowVQ?cp.sellPrice-lowVQ.cost:null;const c=getCust(cp.customerId);return (
+                <tr key={cp.id}>
+                  <td style={Object.assign({},S.td,{fontWeight:600})}>{c?c.name:"—"}</td>
+                  <td style={Object.assign({},S.td,{fontWeight:700,color:"#58a6ff"})}>{fmt$(cp.sellPrice)}</td>
+                  <td style={S.td}>{marg!==null ? <span style={{color:marg>=0?"#10b981":"#f85149",fontWeight:600}}>{fmt$(marg)}</span> : "—"}</td>
+                  <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{cp.notes||"—"}</td>
+                  <td style={S.td}><button style={S.ico("#8b949e")} onClick={()=>openM("editCP",cp)}>✎</button><button style={S.ico("#f85149")} onClick={()=>askDel("cp",cp.id,c?c.name:"")}>🗑</button></td>
+                </tr>
+              );})}</tbody>
             </table>
           )}
         </div>
+        {ordersForPart.length>0 && <div style={S.card}><h2 style={{fontSize:14,fontWeight:700,color:"#f0f6fc",marginBottom:14}}>Order History ({ordersForPart.length})</h2><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr>{["Order #","Customer","Qty","Unit","Status"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead><tbody>{ordersForPart.map(o=>{const c=getCust(o.customerId);return (<tr key={o.id} className="hover-row" style={{cursor:"pointer"}} onClick={()=>{setSelId(o.id);setView("orderDetail");}}><td style={Object.assign({},S.td,{color:"#58a6ff",fontWeight:600})}>{o.orderNum}</td><td style={S.td}>{c?c.name:"—"}</td><td style={S.td}>{o.qty}</td><td style={Object.assign({},S.td,{fontWeight:600})}>{fmt$(o.unitPrice)}</td><td style={S.td}><Badge label={o.status} colors={STATUS_COLORS} /></td></tr>);})}</tbody></table></div>}
       </div>
     );
   };
 
   const CustomersView = () => {
-    const filtered = customers.filter(c=>[c.code,c.name,c.contact].some(v=>(v||"").toLowerCase().indexOf(custSearch.toLowerCase())>=0));
+    const filtered = customers.filter(c=>[c.profileNum,c.code,c.name,primaryContact(c)?.name,primaryContact(c)?.email].some(v=>(v||"").toLowerCase().indexOf(custSearch.toLowerCase())>=0));
     return (
       <div className="fade">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,flexWrap:"wrap",gap:12}}>
-          <div><h1 style={{fontSize:22,fontWeight:700,color:"#f0f6fc"}}>Customers</h1></div>
+          <div><h1 style={{fontSize:22,fontWeight:700,color:"#f0f6fc"}}>Customers</h1><p style={{color:"#8b949e",fontSize:12,marginTop:4}}>{customers.length} total — tap any row to see full profile</p></div>
           <button style={S.btnP} onClick={()=>openM("addCust")}>+ New Customer</button>
         </div>
-        <input style={Object.assign({},S.inp,{maxWidth:340,marginBottom:16})} placeholder="Search..." value={custSearch} onChange={e=>setCustSearch(e.target.value)} />
+        <input style={Object.assign({},S.inp,{maxWidth:420,marginBottom:16})} placeholder="Search profile #, code, name, contact..." value={custSearch} onChange={e=>setCustSearch(e.target.value)} />
         <div style={Object.assign({},S.card,{padding:0,overflowX:"auto"})}>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
-            <thead><tr>{["Code","Name","Contact","Terms","Status",""].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+            <thead><tr>{["Profile #","Code","Name","Primary Contact","Terms","Status",""].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
             <tbody>
-              {filtered.map(c=>(
+              {filtered.map(c=>{const pc=primaryContact(c);return (
                 <tr key={c.id} className="hover-row">
-                  <td style={Object.assign({},S.td,{fontWeight:700,fontFamily:"monospace",color:"#58a6ff"})}>{c.code}</td>
-                  <td style={S.td}>{c.name}</td>
-                  <td style={S.td}>{c.contact}</td>
+                  <td style={Object.assign({},S.td,{fontWeight:700,fontFamily:"monospace",color:"#58a6ff",cursor:"pointer"})} onClick={()=>{setSelId(c.id);setView("custDetail");}}>{c.profileNum||"—"}</td>
+                  <td style={Object.assign({},S.td,{fontFamily:"monospace",color:"#c9d1d9"})}>{c.code||"—"}</td>
+                  <td style={Object.assign({},S.td,{fontWeight:600,cursor:"pointer"})} onClick={()=>{setSelId(c.id);setView("custDetail");}}>{c.name}</td>
+                  <td style={S.td}>{pc?<span>{pc.name}<span style={{color:"#8b949e",fontSize:10,marginLeft:6}}>{pc.title}</span></span>:"—"}</td>
                   <td style={S.td}>{c.terms}</td>
                   <td style={S.td}><Badge label={c.status} colors={CUST_COLORS} /></td>
-                  <td style={S.td}>
-                    <button style={S.ico("#8b949e")} onClick={()=>openM("editCust",c)}>✎</button>
-                    <button style={S.ico("#f85149")} onClick={()=>askDel("cust",c.id,c.name)}>🗑</button>
-                  </td>
+                  <td style={S.td}><button style={S.ico("#8b949e")} onClick={()=>openM("editCust",c)}>✎</button><button style={S.ico("#f85149")} onClick={()=>askDel("cust",c.id,c.name)}>🗑</button></td>
                 </tr>
-              ))}
+              );})}
+              {filtered.length===0 && <tr><td colSpan={7} style={Object.assign({},S.td,{textAlign:"center",color:"#8b949e",padding:40})}>No customers found.</td></tr>}
             </tbody>
           </table>
         </div>
+      </div>
+    );
+  };
+
+  const CustomerDetail = () => {
+    const c = customers.find(x=>x.id===selId);
+    if (!c) return <div>Customer not found.</div>;
+    const ords = orders.filter(o=>o.customerId===c.id);
+    const pricing = customerPricing.filter(p=>p.customerId===c.id);
+    const totalRev = ords.reduce((s,o)=>s+(o.qty*o.unitPrice),0);
+    return (
+      <div className="fade">
+        <button style={{background:"none",border:"none",color:"#58a6ff",cursor:"pointer",fontSize:12,fontFamily:"inherit",padding:0,marginBottom:14}} onClick={()=>setView("customers")}>← Customers</button>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18,flexWrap:"wrap",gap:12}}>
+          <div>
+            <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:6}}>
+              <span style={{fontFamily:"monospace",color:"#8b949e",fontSize:12,letterSpacing:.5}}>{c.profileNum}</span>
+              <h1 style={{fontSize:22,fontWeight:700,color:"#f0f6fc"}}>{c.name}</h1>
+              <Badge label={c.status} colors={CUST_COLORS} />
+            </div>
+            <p style={{color:"#8b949e",fontSize:12}}>{c.code?`Code: ${c.code} · `:""}{c.terms} · {c.website||"no website"}</p>
+          </div>
+          <div style={{display:"flex",gap:8}}><button style={S.btn()} onClick={()=>openM("editCust",c)}>Edit</button><button style={S.btnD} onClick={()=>askDel("cust",c.id,c.name)}>Delete</button></div>
+        </div>
+        <div className="detail-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+          <div style={S.card}>
+            <h2 style={{fontSize:13,fontWeight:700,color:"#f0f6fc",marginBottom:14}}>Company Info</h2>
+            <div style={{marginBottom:10}}><div style={S.lbl}>Billing</div><div style={{fontSize:12,color:"#c9d1d9"}}>{c.billing||"—"}</div></div>
+            <div style={{marginBottom:10}}><div style={S.lbl}>Shipping</div><div style={{fontSize:12,color:"#c9d1d9"}}>{c.shipping||"—"}</div></div>
+            <div style={{marginBottom:10}}><div style={S.lbl}>Tax ID</div><div style={{fontSize:12,color:"#c9d1d9"}}>{c.taxId||"—"}</div></div>
+            <div style={{marginBottom:10}}><div style={S.lbl}>Website</div><div style={{fontSize:12,color:"#c9d1d9"}}>{c.website||"—"}</div></div>
+            {c.notes && <div><div style={S.lbl}>Notes</div><div style={{fontSize:12,color:"#c9d1d9",lineHeight:1.6}}>{c.notes}</div></div>}
+          </div>
+          <div style={S.card}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><h2 style={{fontSize:13,fontWeight:700,color:"#f0f6fc"}}>Contacts ({(c.contacts||[]).length})</h2><button style={Object.assign({},S.btnP,{padding:"5px 10px"})} onClick={()=>openM("contact",{kind:"cust",parentId:c.id})}>+ Contact</button></div>
+            {(c.contacts||[]).length===0 && <p style={{color:"#8b949e",fontSize:12,fontStyle:"italic"}}>No contacts added.</p>}
+            {(c.contacts||[]).map(ct=>(
+              <div key={ct.id} style={{borderBottom:"1px solid #21262d",padding:"10px 0"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:6}}>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}><strong style={{color:"#f0f6fc",fontSize:13}}>{ct.name}</strong>{ct.primary && <span style={{background:"#10b98122",color:"#10b981",border:"1px solid #10b98144",borderRadius:3,padding:"1px 6px",fontSize:9,fontWeight:700}}>PRIMARY</span>}</div>
+                    <div style={{color:"#8b949e",fontSize:11,marginTop:2}}>{ct.title}</div>
+                    <div style={{color:"#c9d1d9",fontSize:11,marginTop:3}}>{ct.email}</div>
+                    <div style={{color:"#c9d1d9",fontSize:11}}>{ct.phone}</div>
+                  </div>
+                  <div style={{display:"flex",gap:2}}>
+                    <button style={S.ico("#8b949e")} onClick={()=>openM("contact",{kind:"cust",parentId:c.id,contactId:ct.id,existing:ct})}>✎</button>
+                    <button style={S.ico("#f85149")} onClick={()=>deleteContact("cust",c.id,ct.id)}>🗑</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="stat-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:14}}>
+          {[{l:"Total Orders",v:ords.length},{l:"Total Revenue",v:fmt$(totalRev),c:"#58a6ff"},{l:"Priced Parts",v:pricing.length}].map(s=>(
+            <div key={s.l} style={Object.assign({},S.card,{padding:"14px 18px",marginBottom:0})}><div style={S.lbl}>{s.l}</div><div style={{fontSize:20,fontWeight:700,color:s.c||"#f0f6fc",marginTop:4}}>{s.v}</div></div>
+          ))}
+        </div>
+        {ords.length>0 && <div style={S.card}><h2 style={{fontSize:14,fontWeight:700,color:"#f0f6fc",marginBottom:14}}>Order History</h2><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr>{["Order #","Part","Qty","Total","Status","Quoted"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead><tbody>{ords.map(o=>{const part=getPart(o.partId);return (<tr key={o.id} className="hover-row" style={{cursor:"pointer"}} onClick={()=>{setSelId(o.id);setView("orderDetail");}}><td style={Object.assign({},S.td,{color:"#58a6ff",fontWeight:600})}>{o.orderNum}</td><td style={Object.assign({},S.td,{fontFamily:"monospace"})}>{part?part.pn:(o.partNumRaw||"—")}</td><td style={S.td}>{o.qty}</td><td style={Object.assign({},S.td,{fontWeight:600})}>{fmt$(o.qty*o.unitPrice)}</td><td style={S.td}><Badge label={o.status} colors={STATUS_COLORS} /></td><td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{fmtD(o.dateQuoted)}</td></tr>);})}</tbody></table></div></div>}
+        {pricing.length>0 && <div style={S.card}><h2 style={{fontSize:14,fontWeight:700,color:"#f0f6fc",marginBottom:14}}>Pricing Agreements</h2><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr>{["Part","Sell Price","Notes"].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead><tbody>{pricing.map(cp=>{const part=getPart(cp.partId);return (<tr key={cp.id}><td style={Object.assign({},S.td,{fontFamily:"monospace"})}>{part?part.pn:"—"}</td><td style={Object.assign({},S.td,{fontWeight:700,color:"#58a6ff"})}>{fmt$(cp.sellPrice)}</td><td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{cp.notes||"—"}</td></tr>);})}</tbody></table></div>}
       </div>
     );
   };
 
   const VendorsView = () => {
-    const filtered = vendors.filter(v=>[v.code,v.name,v.contact].some(val=>(val||"").toLowerCase().indexOf(venSearch.toLowerCase())>=0));
+    const filtered = vendors.filter(v=>[v.profileNum,v.code,v.name,primaryContact(v)?.name].some(val=>(val||"").toLowerCase().indexOf(venSearch.toLowerCase())>=0));
     return (
       <div className="fade">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,flexWrap:"wrap",gap:12}}>
-          <div><h1 style={{fontSize:22,fontWeight:700,color:"#f0f6fc"}}>Vendors</h1></div>
+          <div><h1 style={{fontSize:22,fontWeight:700,color:"#f0f6fc"}}>Vendors</h1><p style={{color:"#8b949e",fontSize:12,marginTop:4}}>{vendors.length} total</p></div>
           <button style={S.btnP} onClick={()=>openM("addVen")}>+ New Vendor</button>
         </div>
-        <input style={Object.assign({},S.inp,{maxWidth:340,marginBottom:16})} placeholder="Search..." value={venSearch} onChange={e=>setVenSearch(e.target.value)} />
+        <input style={Object.assign({},S.inp,{maxWidth:420,marginBottom:16})} placeholder="Search..." value={venSearch} onChange={e=>setVenSearch(e.target.value)} />
         <div style={Object.assign({},S.card,{padding:0,overflowX:"auto"})}>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
-            <thead><tr>{["Code","Name","Contact","Phone","Quotes",""].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
-            <tbody>
-              {filtered.map(v=>{
-                const qc=vendorQuotes.filter(q=>q.vendorId===v.id).length;
-                return (
-                  <tr key={v.id} className="hover-row">
-                    <td style={Object.assign({},S.td,{fontWeight:700,fontFamily:"monospace",color:"#58a6ff"})}>{v.code}</td>
-                    <td style={S.td}>{v.name}</td>
-                    <td style={S.td}>{v.contact}</td>
-                    <td style={S.td}>{v.phone}</td>
-                    <td style={S.td}>{qc}</td>
-                    <td style={S.td}>
-                      <button style={S.ico("#8b949e")} onClick={()=>openM("editVen",v)}>✎</button>
-                      <button style={S.ico("#f85149")} onClick={()=>askDel("ven",v.id,v.name)}>🗑</button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
+            <thead><tr>{["Profile #","Code","Name","Primary Contact","Quotes",""].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+            <tbody>{filtered.map(v=>{const qc=vendorQuotes.filter(q=>q.vendorId===v.id).length;const pc=primaryContact(v);return (
+              <tr key={v.id} className="hover-row">
+                <td style={Object.assign({},S.td,{fontWeight:700,fontFamily:"monospace",color:"#58a6ff",cursor:"pointer"})} onClick={()=>openM("editVen",v)}>{v.profileNum||"—"}</td>
+                <td style={Object.assign({},S.td,{fontFamily:"monospace"})}>{v.code||"—"}</td>
+                <td style={Object.assign({},S.td,{fontWeight:600})}>{v.name}</td>
+                <td style={S.td}>{pc?pc.name:"—"}</td>
+                <td style={S.td}>{qc}</td>
+                <td style={S.td}><button style={S.ico("#8b949e")} onClick={()=>openM("editVen",v)}>✎</button><button style={S.ico("#f85149")} onClick={()=>askDel("ven",v.id,v.name)}>🗑</button></td>
+              </tr>
+            );})}</tbody>
           </table>
         </div>
       </div>
     );
   };
 
-  const navItems = [{id:"dashboard",label:"Dashboard"},{id:"orders",label:"Orders"},{id:"parts",label:"Parts"},{id:"customers",label:"Customers"},{id:"vendors",label:"Vendors"}];
-  const isActive = (id) => view===id || (id==="orders"&&view==="orderDetail") || (id==="parts"&&view==="partDetail");
+  const TeamView = () => (
+    <div className="fade">
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,flexWrap:"wrap",gap:12}}>
+        <div><h1 style={{fontSize:22,fontWeight:700,color:"#f0f6fc"}}>Team</h1><p style={{color:"#8b949e",fontSize:12,marginTop:4}}>Employees who can be assigned to order stages</p></div>
+        <button style={S.btnP} onClick={()=>openM("addEmp")}>+ New Team Member</button>
+      </div>
+      <div style={Object.assign({},S.card,{padding:0,overflowX:"auto"})}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr>{["Name","Role","Email","Phone","Active",""].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{employees.map(e=>(
+            <tr key={e.id} className="hover-row">
+              <td style={Object.assign({},S.td,{fontWeight:600,color:"#f0f6fc"})}>{e.name}</td>
+              <td style={S.td}>{e.role||"—"}</td>
+              <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{e.email||"—"}</td>
+              <td style={Object.assign({},S.td,{color:"#8b949e",fontSize:11})}>{e.phone||"—"}</td>
+              <td style={S.td}>{e.active?<Badge label="Active" colors={{Active:"#10b981"}}/>:<Badge label="Inactive" colors={{Inactive:"#6b7280"}}/>}</td>
+              <td style={S.td}><button style={S.ico("#8b949e")} onClick={()=>openM("editEmp",e)}>✎</button><button style={S.ico("#f85149")} onClick={()=>askDel("emp",e.id,e.name)}>🗑</button></td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const navItems = [{id:"dashboard",label:"Dashboard"},{id:"orders",label:"Orders"},{id:"parts",label:"Parts"},{id:"customers",label:"Customers"},{id:"vendors",label:"Vendors"},{id:"team",label:"Team"}];
+  const isActive = (id) => view===id || (id==="orders"&&view==="orderDetail") || (id==="parts"&&view==="partDetail") || (id==="customers"&&view==="custDetail");
+
+  // matching parts for autocomplete
+  const matchingParts = useMemo(()=>{
+    const q = (ordForm.partNumRaw||"").toUpperCase().trim();
+    if (!q) return [];
+    return parts.filter(p=>p.pn.toUpperCase().indexOf(q)>=0 || (p.desc||"").toUpperCase().indexOf(q)>=0).slice(0,6);
+  }, [ordForm.partNumRaw, parts]);
 
   return (
     <div style={S.root}>
       {toast && <div style={{position:"fixed",bottom:24,right:24,zIndex:200,background:toast.type==="err"?"#da3633":"#238636",borderRadius:8,padding:"10px 18px",fontSize:12,color:"#fff",fontWeight:600,boxShadow:"0 4px 16px #00000066"}} className="fade">{toast.msg}</div>}
-      <div className="mobile-only" style={{position:"fixed",top:0,left:0,right:0,height:52,background:"#010409",borderBottom:"1px solid #21262d",alignItems:"center",padding:"0 14px",zIndex:45,gap:12}}>
-        <button onClick={()=>setMobileNav(!mobileNav)} style={{background:"#21262d",border:"1px solid #30363d",borderRadius:6,padding:"8px 12px",color:"#c9d1d9",cursor:"pointer",fontWeight:700}}>☰</button>
-        <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-          <div style={{width:26,height:26,background:"#1f6feb",borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#fff"}}>O</div>
-          <span style={{color:"#f0f6fc",fontWeight:700,fontSize:14}}>OpsCore</span>
+      <div style={S.topbar}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:30,height:30,background:"#1f6feb",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#fff"}}>O</div>
+          <div><div style={{color:"#f0f6fc",fontWeight:700,fontSize:14,lineHeight:1}}>OpsCore</div><div style={{color:"#8b949e",fontSize:9,marginTop:2,letterSpacing:.5}}>AVIATION ERP</div></div>
+        </div>
+        <div style={{flex:1}}></div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{color:"#8b949e",fontSize:11}}>You:</span>
+          <select style={Object.assign({},S.sel,{width:"auto",minWidth:110,padding:"5px 8px"})} value={currentUser} onChange={e=>setCurrentUser(e.target.value)}>
+            {employees.filter(e=>e.active).map(e=><option key={e.id}>{e.name}</option>)}
+          </select>
+          <button style={S.btn()} onClick={exportXLSX}>Export</button>
         </div>
       </div>
-      {mobileNav && <div className="mobile-only" style={{position:"fixed",inset:0,background:"#000000aa",zIndex:46}} onClick={()=>setMobileNav(false)} />}
-      <div className="sidebar-desktop" style={S.sidebar}>
-        <div style={{padding:"0 16px 16px",borderBottom:"1px solid #21262d",marginBottom:10}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:30,height:30,background:"#1f6feb",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#fff"}}>O</div>
-            <div><div style={{color:"#f0f6fc",fontWeight:700,fontSize:14}}>OpsCore</div><div style={{color:"#8b949e",fontSize:9,marginTop:2}}>AVIATION ERP</div></div>
-          </div>
-        </div>
-        {navItems.map(n=><div key={n.id} style={S.navItem(isActive(n.id))} onClick={()=>{setView(n.id);setSelId(null);setMobileNav(false);}}>{n.label}</div>)}
-        <div style={{padding:"16px",marginTop:20,borderTop:"1px solid #21262d"}}>
-          <button style={Object.assign({},S.btn(),{width:"100%",justifyContent:"center"})} onClick={exportXLSX}>Export Excel</button>
-        </div>
+      <div style={S.topnav} className="top-nav">
+        {navItems.map(n=><button key={n.id} style={S.navTab(isActive(n.id))} onClick={()=>{setView(n.id);setSelId(null);}}>{n.label}</button>)}
       </div>
-      {mobileNav && (
-        <div className="mobile-only" style={{position:"fixed",top:0,left:0,width:240,height:"100vh",background:"#010409",borderRight:"1px solid #21262d",zIndex:47,overflowY:"auto",padding:"16px 0",display:"block"}}>
-          <div style={{padding:"0 16px 16px",borderBottom:"1px solid #21262d",marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{width:30,height:30,background:"#1f6feb",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#fff"}}>O</div>
-              <div><div style={{color:"#f0f6fc",fontWeight:700,fontSize:14}}>OpsCore</div><div style={{color:"#8b949e",fontSize:9,marginTop:2}}>AVIATION ERP</div></div>
-            </div>
-          </div>
-          {navItems.map(n=><div key={n.id} style={S.navItem(isActive(n.id))} onClick={()=>{setView(n.id);setSelId(null);setMobileNav(false);}}>{n.label}</div>)}
-          <div style={{padding:"16px",marginTop:20,borderTop:"1px solid #21262d"}}>
-            <button style={Object.assign({},S.btn(),{width:"100%",justifyContent:"center"})} onClick={()=>{exportXLSX();setMobileNav(false);}}>Export Excel</button>
-          </div>
-        </div>
-      )}
-      <div className="main-content" style={S.main}>
-        <div className="body-wrap" style={S.body}>
-          {view==="dashboard" && <Dashboard />}
-          {view==="orders" && <OrdersView />}
-          {view==="orderDetail" && <OrderDetail />}
-          {view==="parts" && <PartsView />}
-          {view==="partDetail" && <PartDetail />}
-          {view==="customers" && <CustomersView />}
-          {view==="vendors" && <VendorsView />}
-        </div>
+      <div style={S.body}>
+        {view==="dashboard" && <Dashboard />}
+        {view==="orders" && <OrdersView />}
+        {view==="orderDetail" && <OrderDetail />}
+        {view==="parts" && <PartsView />}
+        {view==="partDetail" && <PartDetail />}
+        {view==="customers" && <CustomersView />}
+        {view==="custDetail" && <CustomerDetail />}
+        {view==="vendors" && <VendorsView />}
+        {view==="team" && <TeamView />}
       </div>
 
       {(modal==="addCust"||modal==="editCust") && (
         <div style={S.overlay} onClick={()=>setModal(null)}>
-          <div style={S.modal} className="modal-box fade" onClick={e=>e.stopPropagation()}>
-            <h2 style={{fontSize:15,fontWeight:700,color:"#f0f6fc",marginBottom:18}}>{modal==="editCust"?"Edit Customer":"New Customer"}</h2>
-            <Row><FF label="Code *" half><input style={S.inp} value={custForm.code||""} onChange={e=>setCustForm(Object.assign({},custForm,{code:e.target.value}))} /></FF><FF label="Status" half><select style={S.sel} value={custForm.status||"Active"} onChange={e=>setCustForm(Object.assign({},custForm,{status:e.target.value}))}>{CUST_STATUS.map(s=><option key={s}>{s}</option>)}</select></FF></Row>
-            <FF label="Name *"><input style={S.inp} value={custForm.name||""} onChange={e=>setCustForm(Object.assign({},custForm,{name:e.target.value}))} /></FF>
-            <Row><FF label="Contact" half><input style={S.inp} value={custForm.contact||""} onChange={e=>setCustForm(Object.assign({},custForm,{contact:e.target.value}))} /></FF><FF label="Terms" half><select style={S.sel} value={custForm.terms||"Net 30"} onChange={e=>setCustForm(Object.assign({},custForm,{terms:e.target.value}))}>{TERMS.map(t=><option key={t}>{t}</option>)}</select></FF></Row>
-            <Row><FF label="Email" half><input style={S.inp} value={custForm.email||""} onChange={e=>setCustForm(Object.assign({},custForm,{email:e.target.value}))} /></FF><FF label="Phone" half><input style={S.inp} value={custForm.phone||""} onChange={e=>setCustForm(Object.assign({},custForm,{phone:e.target.value}))} /></FF></Row>
+          <div style={S.modal} className="fade" onClick={e=>e.stopPropagation()}>
+            <h2 style={{fontSize:15,fontWeight:700,color:"#f0f6fc",marginBottom:6}}>{modal==="editCust"?"Edit Customer":"New Customer"}</h2>
+            {modal==="addCust" && <p style={{color:"#8b949e",fontSize:11,marginBottom:14}}>Profile # will auto-generate: {nextProfileNum(customers,"CUS")}</p>}
+            <Row><FF label="Code (short)" half><input style={S.inp} value={custForm.code||""} onChange={e=>setCustForm(Object.assign({},custForm,{code:e.target.value}))} placeholder="ACME" /></FF><FF label="Status" half><select style={S.sel} value={custForm.status||"Active"} onChange={e=>setCustForm(Object.assign({},custForm,{status:e.target.value}))}>{CUST_STATUS.map(s=><option key={s}>{s}</option>)}</select></FF></Row>
+            <FF label="Company Name *"><input style={S.inp} value={custForm.name||""} onChange={e=>setCustForm(Object.assign({},custForm,{name:e.target.value}))} /></FF>
+            <Row><FF label="Payment Terms" half><select style={S.sel} value={custForm.terms||"Net 30"} onChange={e=>setCustForm(Object.assign({},custForm,{terms:e.target.value}))}>{TERMS.map(t=><option key={t}>{t}</option>)}</select></FF><FF label="Website" half><input style={S.inp} value={custForm.website||""} onChange={e=>setCustForm(Object.assign({},custForm,{website:e.target.value}))} /></FF></Row>
+            <FF label="Tax ID / EIN"><input style={S.inp} value={custForm.taxId||""} onChange={e=>setCustForm(Object.assign({},custForm,{taxId:e.target.value}))} /></FF>
             <FF label="Billing Address"><input style={S.inp} value={custForm.billing||""} onChange={e=>setCustForm(Object.assign({},custForm,{billing:e.target.value}))} /></FF>
+            <FF label="Shipping Address"><input style={S.inp} value={custForm.shipping||""} onChange={e=>setCustForm(Object.assign({},custForm,{shipping:e.target.value}))} /></FF>
             <FF label="Notes"><textarea style={Object.assign({},S.inp,{height:60,resize:"vertical"})} value={custForm.notes||""} onChange={e=>setCustForm(Object.assign({},custForm,{notes:e.target.value}))} /></FF>
+            <p style={{color:"#8b949e",fontSize:11,marginTop:6}}>💡 After saving, you can add multiple contacts from the customer's detail page.</p>
             <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:12}}><button style={S.btn()} onClick={()=>setModal(null)}>Cancel</button><button style={S.btnP} onClick={saveCust}>Save</button></div>
           </div>
         </div>
@@ -760,25 +916,39 @@ function App() {
 
       {(modal==="addVen"||modal==="editVen") && (
         <div style={S.overlay} onClick={()=>setModal(null)}>
-          <div style={S.modal} className="modal-box fade" onClick={e=>e.stopPropagation()}>
-            <h2 style={{fontSize:15,fontWeight:700,color:"#f0f6fc",marginBottom:18}}>{modal==="editVen"?"Edit Vendor":"New Vendor"}</h2>
-            <FF label="Code *"><input style={S.inp} value={venForm.code||""} onChange={e=>setVenForm(Object.assign({},venForm,{code:e.target.value}))} /></FF>
-            <FF label="Name *"><input style={S.inp} value={venForm.name||""} onChange={e=>setVenForm(Object.assign({},venForm,{name:e.target.value}))} /></FF>
-            <Row><FF label="Contact" half><input style={S.inp} value={venForm.contact||""} onChange={e=>setVenForm(Object.assign({},venForm,{contact:e.target.value}))} /></FF><FF label="Phone" half><input style={S.inp} value={venForm.phone||""} onChange={e=>setVenForm(Object.assign({},venForm,{phone:e.target.value}))} /></FF></Row>
-            <FF label="Email"><input style={S.inp} value={venForm.email||""} onChange={e=>setVenForm(Object.assign({},venForm,{email:e.target.value}))} /></FF>
+          <div style={S.modal} className="fade" onClick={e=>e.stopPropagation()}>
+            <h2 style={{fontSize:15,fontWeight:700,color:"#f0f6fc",marginBottom:6}}>{modal==="editVen"?"Edit Vendor":"New Vendor"}</h2>
+            {modal==="addVen" && <p style={{color:"#8b949e",fontSize:11,marginBottom:14}}>Profile # will auto-generate: {nextProfileNum(vendors,"VEN")}</p>}
+            <FF label="Code" half><input style={S.inp} value={venForm.code||""} onChange={e=>setVenForm(Object.assign({},venForm,{code:e.target.value}))} /></FF>
+            <FF label="Company Name *"><input style={S.inp} value={venForm.name||""} onChange={e=>setVenForm(Object.assign({},venForm,{name:e.target.value}))} /></FF>
+            <FF label="Address"><input style={S.inp} value={venForm.address||""} onChange={e=>setVenForm(Object.assign({},venForm,{address:e.target.value}))} /></FF>
+            <FF label="Website"><input style={S.inp} value={venForm.website||""} onChange={e=>setVenForm(Object.assign({},venForm,{website:e.target.value}))} /></FF>
             <FF label="Notes"><textarea style={Object.assign({},S.inp,{height:60,resize:"vertical"})} value={venForm.notes||""} onChange={e=>setVenForm(Object.assign({},venForm,{notes:e.target.value}))} /></FF>
             <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:12}}><button style={S.btn()} onClick={()=>setModal(null)}>Cancel</button><button style={S.btnP} onClick={saveVen}>Save</button></div>
           </div>
         </div>
       )}
 
+      {modal==="contact" && (
+        <div style={S.overlay} onClick={()=>setModal(null)}>
+          <div style={S.modal} className="fade" onClick={e=>e.stopPropagation()}>
+            <h2 style={{fontSize:15,fontWeight:700,color:"#f0f6fc",marginBottom:18}}>{contactTarget?.contactId?"Edit Contact":"New Contact"}</h2>
+            <FF label="Name *"><input style={S.inp} value={contactForm.name||""} onChange={e=>setContactForm(Object.assign({},contactForm,{name:e.target.value}))} /></FF>
+            <FF label="Title / Role"><input style={S.inp} value={contactForm.title||""} onChange={e=>setContactForm(Object.assign({},contactForm,{title:e.target.value}))} placeholder="Purchasing, AP, Receiving, etc." /></FF>
+            <Row><FF label="Email" half><input style={S.inp} value={contactForm.email||""} onChange={e=>setContactForm(Object.assign({},contactForm,{email:e.target.value}))} /></FF><FF label="Phone" half><input style={S.inp} value={contactForm.phone||""} onChange={e=>setContactForm(Object.assign({},contactForm,{phone:e.target.value}))} /></FF></Row>
+            <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer"}}><input type="checkbox" checked={!!contactForm.primary} onChange={e=>setContactForm(Object.assign({},contactForm,{primary:e.target.checked}))} /><span style={{fontSize:12,color:"#c9d1d9"}}>Primary contact</span></label>
+            <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:12}}><button style={S.btn()} onClick={()=>setModal(null)}>Cancel</button><button style={S.btnP} onClick={saveContact}>Save Contact</button></div>
+          </div>
+        </div>
+      )}
+
       {(modal==="addPart"||modal==="editPart") && (
         <div style={S.overlay} onClick={()=>setModal(null)}>
-          <div style={S.modal} className="modal-box fade" onClick={e=>e.stopPropagation()}>
+          <div style={S.modal} className="fade" onClick={e=>e.stopPropagation()}>
             <h2 style={{fontSize:15,fontWeight:700,color:"#f0f6fc",marginBottom:18}}>{modal==="editPart"?"Edit Part":"New Part"}</h2>
             <FF label="Part Number *"><input style={Object.assign({},S.inp,{fontFamily:"monospace"})} value={partForm.pn||""} onChange={e=>setPartForm(Object.assign({},partForm,{pn:e.target.value}))} /></FF>
-            <FF label="Description"><input style={S.inp} value={partForm.desc||""} onChange={e=>setPartForm(Object.assign({},partForm,{desc:e.target.value}))} /></FF>
-            <Row><FF label="Category" half><select style={S.sel} value={partForm.category||"Hydraulics"} onChange={e=>setPartForm(Object.assign({},partForm,{category:e.target.value}))}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></FF><FF label="UOM" half><input style={S.inp} value={partForm.uom||"EA"} onChange={e=>setPartForm(Object.assign({},partForm,{uom:e.target.value}))} /></FF></Row>
+            <FF label="Description"><input style={S.inp} value={partForm.desc||""} onChange={e=>setPartForm(Object.assign({},partForm,{desc:e.target.value}))} placeholder="What is this part?" /></FF>
+            <Row><FF label="Category" half><select style={S.sel} value={partForm.category||"Other"} onChange={e=>setPartForm(Object.assign({},partForm,{category:e.target.value}))}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></FF><FF label="UOM" half><input style={S.inp} value={partForm.uom||"EA"} onChange={e=>setPartForm(Object.assign({},partForm,{uom:e.target.value}))} /></FF></Row>
             <FF label="Notes"><textarea style={Object.assign({},S.inp,{height:60,resize:"vertical"})} value={partForm.notes||""} onChange={e=>setPartForm(Object.assign({},partForm,{notes:e.target.value}))} /></FF>
             <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:12}}><button style={S.btn()} onClick={()=>setModal(null)}>Cancel</button><button style={S.btnP} onClick={savePart}>Save</button></div>
           </div>
@@ -787,10 +957,10 @@ function App() {
 
       {(modal==="addVQ"||modal==="editVQ") && (
         <div style={S.overlay} onClick={()=>setModal(null)}>
-          <div style={S.modal} className="modal-box fade" onClick={e=>e.stopPropagation()}>
+          <div style={S.modal} className="fade" onClick={e=>e.stopPropagation()}>
             <h2 style={{fontSize:15,fontWeight:700,color:"#f0f6fc",marginBottom:6}}>{modal==="editVQ"?"Edit Quote":"Log Vendor Quote"}</h2>
             <p style={{color:"#8b949e",fontSize:11,marginBottom:18}}>Part: <strong style={{color:"#c9d1d9",fontFamily:"monospace"}}>{(getPart(vqForm.partId)||{}).pn}</strong></p>
-            <FF label="Vendor *"><select style={S.sel} value={vqForm.vendorId||""} onChange={e=>setVqForm(Object.assign({},vqForm,{vendorId:e.target.value}))}><option value="">— Select —</option>{vendors.map(v=><option key={v.id} value={v.id}>{v.code} — {v.name}</option>)}</select></FF>
+            <FF label="Vendor *"><select style={S.sel} value={vqForm.vendorId||""} onChange={e=>setVqForm(Object.assign({},vqForm,{vendorId:e.target.value}))}><option value="">— Select —</option>{vendors.map(v=><option key={v.id} value={v.id}>{v.code||v.profileNum} — {v.name}</option>)}</select></FF>
             <Row><FF label="Cost *" half><input type="number" step="0.01" style={S.inp} value={vqForm.cost||""} onChange={e=>setVqForm(Object.assign({},vqForm,{cost:e.target.value}))} /></FF><FF label="Lead Days" half><input type="number" style={S.inp} value={vqForm.leadDays||""} onChange={e=>setVqForm(Object.assign({},vqForm,{leadDays:e.target.value}))} /></FF></Row>
             <Row><FF label="Qty Break" half><input type="number" style={S.inp} value={vqForm.qty||1} onChange={e=>setVqForm(Object.assign({},vqForm,{qty:e.target.value}))} /></FF><FF label="Source" half><select style={S.sel} value={vqForm.source||"Email quote"} onChange={e=>setVqForm(Object.assign({},vqForm,{source:e.target.value}))}>{QUOTE_SOURCES.map(s=><option key={s}>{s}</option>)}</select></FF></Row>
             <Row><FF label="Quote Date" half><input type="date" style={S.inp} value={vqForm.quoteDate||""} onChange={e=>setVqForm(Object.assign({},vqForm,{quoteDate:e.target.value}))} /></FF><FF label="Expires" half><input type="date" style={S.inp} value={vqForm.expires||""} onChange={e=>setVqForm(Object.assign({},vqForm,{expires:e.target.value}))} /></FF></Row>
@@ -802,10 +972,10 @@ function App() {
 
       {(modal==="addCP"||modal==="editCP") && (
         <div style={S.overlay} onClick={()=>setModal(null)}>
-          <div style={S.modal} className="modal-box fade" onClick={e=>e.stopPropagation()}>
+          <div style={S.modal} className="fade" onClick={e=>e.stopPropagation()}>
             <h2 style={{fontSize:15,fontWeight:700,color:"#f0f6fc",marginBottom:6}}>{modal==="editCP"?"Edit Price":"Add Customer Price"}</h2>
             <p style={{color:"#8b949e",fontSize:11,marginBottom:18}}>Part: <strong style={{color:"#c9d1d9",fontFamily:"monospace"}}>{(getPart(cpForm.partId)||{}).pn}</strong></p>
-            <FF label="Customer *"><select style={S.sel} value={cpForm.customerId||""} onChange={e=>setCpForm(Object.assign({},cpForm,{customerId:e.target.value}))}><option value="">— Select —</option>{customers.map(c=><option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}</select></FF>
+            <FF label="Customer *"><select style={S.sel} value={cpForm.customerId||""} onChange={e=>setCpForm(Object.assign({},cpForm,{customerId:e.target.value}))}><option value="">— Select —</option>{customers.map(c=><option key={c.id} value={c.id}>{c.profileNum} — {c.name}</option>)}</select></FF>
             <FF label="Sell Price *"><input type="number" step="0.01" style={S.inp} value={cpForm.sellPrice||""} onChange={e=>setCpForm(Object.assign({},cpForm,{sellPrice:e.target.value}))} /></FF>
             <FF label="Notes"><textarea style={Object.assign({},S.inp,{height:60,resize:"vertical"})} value={cpForm.notes||""} onChange={e=>setCpForm(Object.assign({},cpForm,{notes:e.target.value}))} /></FF>
             <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:12}}><button style={S.btn()} onClick={()=>setModal(null)}>Cancel</button><button style={S.btnP} onClick={saveCP}>Save</button></div>
@@ -815,27 +985,25 @@ function App() {
 
       {(modal==="addOrd"||modal==="editOrd") && (
         <div style={S.overlay} onClick={()=>setModal(null)}>
-          <div style={Object.assign({},S.modal,{maxWidth:620})} className="modal-box fade" onClick={e=>e.stopPropagation()}>
-            <h2 style={{fontSize:15,fontWeight:700,color:"#f0f6fc",marginBottom:18}}>{modal==="editOrd"?"Edit Order":"New Order"}</h2>
-            <Row><FF label="Order #" half><input style={S.inp} value={ordForm.orderNum||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{orderNum:e.target.value}))} placeholder={"Auto: "+nextOrderNum(orders)} /></FF><FF label="Cust PO #" half><input style={S.inp} value={ordForm.custPO||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{custPO:e.target.value}))} /></FF></Row>
-            <Row>
-              <FF label="Customer *" half><select style={S.sel} value={ordForm.customerId||""} onChange={e=>{
-                const cid=e.target.value; const u=Object.assign({},ordForm,{customerId:cid});
-                if (ordForm.partId && cid) { const cp=customerPricing.find(c=>c.partId===ordForm.partId && c.customerId===cid); if (cp) u.unitPrice=String(cp.sellPrice); }
-                setOrdForm(u);
-              }}><option value="">— Select —</option>{customers.map(c=><option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}</select></FF>
-              <FF label="Part *" half><select style={S.sel} value={ordForm.partId||""} onChange={e=>{
-                const pid=e.target.value; const u=Object.assign({},ordForm,{partId:pid});
-                if (pid && ordForm.customerId) { const cp=customerPricing.find(c=>c.partId===pid && c.customerId===ordForm.customerId); if (cp) u.unitPrice=String(cp.sellPrice); }
-                if (pid) { const q=vendorQuotes.filter(vq=>vq.partId===pid).sort((a,b)=>a.cost-b.cost)[0]; if (q && !ordForm.vendorId) { u.vendorId=q.vendorId; u.vendorCost=String(q.cost); } }
-                setOrdForm(u);
-              }}><option value="">— Select —</option>{parts.map(p=><option key={p.id} value={p.id}>{p.pn} — {p.desc}</option>)}</select></FF>
-            </Row>
+          <div style={Object.assign({},S.modal,{maxWidth:640})} className="fade" onClick={e=>e.stopPropagation()}>
+            <h2 style={{fontSize:15,fontWeight:700,color:"#f0f6fc",marginBottom:6}}>{modal==="editOrd"?"Edit Order":"New Order"}</h2>
+            {modal==="addOrd" && <p style={{color:"#8b949e",fontSize:11,marginBottom:14}}>Order # will auto-generate: {nextOrderNum(orders)}</p>}
+            <FF label="Customer PO # (optional)"><input style={S.inp} value={ordForm.custPO||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{custPO:e.target.value}))} /></FF>
+            <FF label="Customer *"><select style={S.sel} value={ordForm.customerId||""} onChange={e=>{const cid=e.target.value;const u=Object.assign({},ordForm,{customerId:cid});if (ordForm.partId && cid) { const cp=customerPricing.find(c=>c.partId===ordForm.partId && c.customerId===cid); if (cp) u.unitPrice=String(cp.sellPrice); } setOrdForm(u);}}><option value="">— Select —</option>{customers.map(c=><option key={c.id} value={c.id}>{c.profileNum} — {c.name}</option>)}</select></FF>
+            <FF label="Part Number (type freely or pick existing)">
+              <input style={Object.assign({},S.inp,{fontFamily:"monospace"})} value={ordForm.partNumRaw||""} onChange={e=>{const v=e.target.value;const u=Object.assign({},ordForm,{partNumRaw:v,partId:""});setOrdForm(u);}} placeholder="e.g. HTR-204-7A" />
+              {matchingParts.length>0 && (ordForm.partNumRaw||"").trim()!=="" && (
+                <div style={{marginTop:6,background:"#0d1117",border:"1px solid #30363d",borderRadius:6,maxHeight:160,overflowY:"auto"}}>
+                  {matchingParts.map(mp=><div key={mp.id} style={{padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid #21262d",fontSize:12}} onClick={()=>{const u=Object.assign({},ordForm,{partId:mp.id,partNumRaw:mp.pn});if (ordForm.customerId) {const cp=customerPricing.find(c=>c.partId===mp.id && c.customerId===ordForm.customerId);if (cp) u.unitPrice=String(cp.sellPrice);}const q=vendorQuotes.filter(vq=>vq.partId===mp.id).sort((a,b)=>a.cost-b.cost)[0];if (q && !ordForm.vendorId) { u.vendorId=q.vendorId; u.vendorCost=String(q.cost); }setOrdForm(u);}}><span style={{fontFamily:"monospace",fontWeight:700,color:"#58a6ff"}}>{mp.pn}</span>{mp.desc && <span style={{color:"#8b949e",marginLeft:8,fontSize:11}}>{mp.desc}</span>}</div>)}
+                </div>
+              )}
+              {(ordForm.partNumRaw||"").trim() && !matchingParts.some(mp=>mp.pn.toUpperCase()===(ordForm.partNumRaw||"").toUpperCase().trim()) && <p style={{color:"#10b981",fontSize:11,marginTop:4}}>✓ New part — will be added to catalog</p>}
+            </FF>
             <Row><FF label="Qty *" half><input type="number" style={S.inp} value={ordForm.qty||1} onChange={e=>setOrdForm(Object.assign({},ordForm,{qty:e.target.value}))} /></FF><FF label="Unit Price" half><input type="number" step="0.01" style={S.inp} value={ordForm.unitPrice||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{unitPrice:e.target.value}))} /></FF></Row>
-            <Row><FF label="Vendor" half><select style={S.sel} value={ordForm.vendorId||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{vendorId:e.target.value}))}><option value="">— None —</option>{vendors.map(v=><option key={v.id} value={v.id}>{v.code} — {v.name}</option>)}</select></FF><FF label="Status" half><select style={S.sel} value={ordForm.status||"Quoted"} onChange={e=>setOrdForm(Object.assign({},ordForm,{status:e.target.value}))}>{ORDER_STATUSES.map(s=><option key={s}>{s}</option>)}</select></FF></Row>
+            <Row><FF label="Vendor" half><select style={S.sel} value={ordForm.vendorId||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{vendorId:e.target.value}))}><option value="">— None —</option>{vendors.map(v=><option key={v.id} value={v.id}>{v.code||v.profileNum} — {v.name}</option>)}</select></FF><FF label="Status" half><select style={S.sel} value={ordForm.status||"Quoted"} onChange={e=>setOrdForm(Object.assign({},ordForm,{status:e.target.value}))}>{ORDER_STATUSES.map(s=><option key={s}>{s}</option>)}</select></FF></Row>
             <Row><FF label="Vendor Cost" half><input type="number" step="0.01" style={S.inp} value={ordForm.vendorCost||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{vendorCost:e.target.value}))} /></FF><FF label="Repair Cost" half><input type="number" step="0.01" style={S.inp} value={ordForm.repairCost||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{repairCost:e.target.value}))} /></FF></Row>
             <Row><FF label="Priority" half><select style={S.sel} value={ordForm.priority||"Normal"} onChange={e=>setOrdForm(Object.assign({},ordForm,{priority:e.target.value}))}>{PRIORITIES.map(p=><option key={p}>{p}</option>)}</select></FF><FF label="Date Quoted" half><input type="date" style={S.inp} value={ordForm.dateQuoted||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{dateQuoted:e.target.value}))} /></FF></Row>
-            <Row><FF label="Date PO" half><input type="date" style={S.inp} value={ordForm.datePO||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{datePO:e.target.value}))} /></FF><FF label="Date Vendor" half><input type="date" style={S.inp} value={ordForm.dateVendor||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{dateVendor:e.target.value}))} /></FF></Row>
+            <Row><FF label="Date PO Rcv'd" half><input type="date" style={S.inp} value={ordForm.datePO||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{datePO:e.target.value}))} /></FF><FF label="Date Vendor Ord" half><input type="date" style={S.inp} value={ordForm.dateVendor||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{dateVendor:e.target.value}))} /></FF></Row>
             <FF label="Expected Ship"><input type="date" style={S.inp} value={ordForm.dateShip||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{dateShip:e.target.value}))} /></FF>
             <FF label="Notes"><textarea style={Object.assign({},S.inp,{height:60,resize:"vertical"})} value={ordForm.notes||""} onChange={e=>setOrdForm(Object.assign({},ordForm,{notes:e.target.value}))} /></FF>
             <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:12}}><button style={S.btn()} onClick={()=>setModal(null)}>Cancel</button><button style={S.btnP} onClick={saveOrd}>Save</button></div>
@@ -845,18 +1013,40 @@ function App() {
 
       {modal==="addEvt" && (
         <div style={S.overlay} onClick={()=>setModal(null)}>
-          <div style={Object.assign({},S.modal,{maxWidth:440})} className="modal-box fade" onClick={e=>e.stopPropagation()}>
+          <div style={Object.assign({},S.modal,{maxWidth:480})} className="fade" onClick={e=>e.stopPropagation()}>
             <h2 style={{fontSize:15,fontWeight:700,color:"#f0f6fc",marginBottom:18}}>Log Event</h2>
-            <Row><FF label="Type" half><select style={S.sel} value={evtForm.type||"Note"} onChange={e=>setEvtForm(Object.assign({},evtForm,{type:e.target.value}))}>{EVENT_TYPES.map(t=><option key={t}>{t}</option>)}</select></FF><FF label="Author" half><input style={S.inp} value={evtForm.author||""} onChange={e=>setEvtForm(Object.assign({},evtForm,{author:e.target.value}))} /></FF></Row>
+            <Row><FF label="Type" half><select style={S.sel} value={evtForm.type||"Note"} onChange={e=>setEvtForm(Object.assign({},evtForm,{type:e.target.value}))}>{EVENT_TYPES.map(t=><option key={t}>{t}</option>)}</select></FF><FF label="Author" half><input style={S.inp} value={evtForm.author||currentUser} onChange={e=>setEvtForm(Object.assign({},evtForm,{author:e.target.value}))} /></FF></Row>
             <FF label="Note *"><textarea style={Object.assign({},S.inp,{height:80,resize:"vertical"})} value={evtForm.note||""} onChange={e=>setEvtForm(Object.assign({},evtForm,{note:e.target.value}))} /></FF>
+            <FF label="Attachments (drag files or emails here — .eml, .msg, .pdf, etc.)">
+              <div className={"drop-zone"+(dragging?" dragging":"")} style={{border:"2px dashed #30363d",borderRadius:8,padding:20,textAlign:"center",background:"#0d1117",cursor:"pointer",transition:"border .12s"}} onClick={()=>fileRef.current?.click()} onDragOver={e=>{e.preventDefault();setDragging(true);}} onDragLeave={()=>setDragging(false)} onDrop={e=>{e.preventDefault();setDragging(false);handleFiles(e.dataTransfer.files);}}>
+                <div style={{color:"#8b949e",fontSize:12}}>📎 Tap to select or drag files here</div>
+                <div style={{color:"#6b7280",fontSize:10,marginTop:4}}>Outlook emails: save as .eml or .msg, then drag in</div>
+                <input ref={fileRef} type="file" multiple style={{display:"none"}} onChange={e=>handleFiles(e.target.files)} />
+              </div>
+              {evtDocs.length>0 && <div style={{marginTop:8,display:"flex",gap:6,flexWrap:"wrap"}}>{evtDocs.map((d,i)=><div key={i} style={{background:"#21262d",borderRadius:4,padding:"3px 8px",fontSize:11,color:"#c9d1d9",display:"flex",gap:4,alignItems:"center"}}>📎 {d.name} <span style={{cursor:"pointer",color:"#8b949e",marginLeft:2}} onClick={()=>setEvtDocs(evtDocs.filter((_,j)=>j!==i))}>✕</span></div>)}</div>}
+            </FF>
             <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:12}}><button style={S.btn()} onClick={()=>setModal(null)}>Cancel</button><button style={S.btnP} onClick={saveEvt}>Save</button></div>
+          </div>
+        </div>
+      )}
+
+      {(modal==="addEmp"||modal==="editEmp") && (
+        <div style={S.overlay} onClick={()=>setModal(null)}>
+          <div style={S.modal} className="fade" onClick={e=>e.stopPropagation()}>
+            <h2 style={{fontSize:15,fontWeight:700,color:"#f0f6fc",marginBottom:18}}>{modal==="editEmp"?"Edit Team Member":"New Team Member"}</h2>
+            <FF label="Name *"><input style={S.inp} value={empForm.name||""} onChange={e=>setEmpForm(Object.assign({},empForm,{name:e.target.value}))} /></FF>
+            <FF label="Role / Title"><input style={S.inp} value={empForm.role||""} onChange={e=>setEmpForm(Object.assign({},empForm,{role:e.target.value}))} placeholder="Account Manager, Repair Tech, Shipping, etc." /></FF>
+            <Row><FF label="Email" half><input style={S.inp} value={empForm.email||""} onChange={e=>setEmpForm(Object.assign({},empForm,{email:e.target.value}))} /></FF><FF label="Phone" half><input style={S.inp} value={empForm.phone||""} onChange={e=>setEmpForm(Object.assign({},empForm,{phone:e.target.value}))} /></FF></Row>
+            <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,cursor:"pointer"}}><input type="checkbox" checked={empForm.active!==false} onChange={e=>setEmpForm(Object.assign({},empForm,{active:e.target.checked}))} /><span style={{fontSize:12,color:"#c9d1d9"}}>Active (can be assigned to orders)</span></label>
+            <FF label="Notes"><textarea style={Object.assign({},S.inp,{height:60,resize:"vertical"})} value={empForm.notes||""} onChange={e=>setEmpForm(Object.assign({},empForm,{notes:e.target.value}))} /></FF>
+            <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:12}}><button style={S.btn()} onClick={()=>setModal(null)}>Cancel</button><button style={S.btnP} onClick={saveEmp}>Save</button></div>
           </div>
         </div>
       )}
 
       {modal==="del" && delTarget && (
         <div style={S.overlay} onClick={()=>setModal(null)}>
-          <div style={Object.assign({},S.modal,{maxWidth:380})} className="modal-box fade" onClick={e=>e.stopPropagation()}>
+          <div style={Object.assign({},S.modal,{maxWidth:380})} className="fade" onClick={e=>e.stopPropagation()}>
             <h2 style={{fontSize:15,fontWeight:700,color:"#f85149",marginBottom:10}}>Confirm Delete</h2>
             <p style={{color:"#8b949e",fontSize:12,marginBottom:14}}>Delete <strong style={{color:"#f0f6fc"}}>"{delTarget.label}"</strong>?</p>
             <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn()} onClick={()=>setModal(null)}>Cancel</button><button style={S.btnD} onClick={doDelete}>Delete</button></div>
